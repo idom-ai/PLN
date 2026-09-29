@@ -14,7 +14,7 @@ class ProcesadorDeTexto():
         
     def preprocesar_texto(self):
         
-        with open(self.__file_name + '.jsonl', 'r') as fp:
+        with open(self.__file_name + '.jsonl', 'r', encoding='utf-8') as fp:
             for line in fp:
                 # un diccionario para cada nueva review
                 review = dict()
@@ -42,22 +42,19 @@ class ProcesadorDeTexto():
             line = elemento
             
             if line['rating'] > 4.5:
-                with open(f'positivas/positivas_{self.__num_positivas + 1}.json', 'w') as f:
-                    del line['rating']
-                    f.write(str(line))
+                with open(f'positivas/positivas_{self.__num_positivas + 1}.json', 'w', encoding='utf-8') as f:
+                    json.dump(line, f)
                     self.__num_positivas +=1
-                    
+
             elif (line['rating'] < 4.5) and (line['rating'] > 1.5):
-                with open(f'neutras/neutras_{self.__num_neutras + 1}.json', 'w') as f:
-                    del line['rating']
-                    f.write(str(line))
+                with open(f'neutras/neutras_{self.__num_neutras + 1}.json', 'w', encoding='utf-8') as f:
+                    json.dump(line, f)
                     self.__num_neutras +=1
-            
-            else: 
-                
-                with open(f'negativas/negativas_{self.__num_negativas + 1}.json', 'w') as f:
-                    del line['rating']
-                    f.write(str(line))
+
+            else:
+
+                with open(f'negativas/negativas_{self.__num_negativas + 1}.json', 'w', encoding='utf-8') as f:
+                    json.dump(line, f)
                     self.__num_negativas +=1
                         
                         
