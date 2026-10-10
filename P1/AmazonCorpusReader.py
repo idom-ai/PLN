@@ -182,7 +182,7 @@ class AmazonCorpusReader(CategorizedCorpusReader, CorpusReader):
     #     for doc in self.paras(fileids, categories):
     #         yield [[pos_tag(sent) for sent in para] for para in doc]
 
-    def describe(self, fileids=None, categories=None):
+    def describe(self, fileids=None, categories=None, sin_stopwords=False):
         """Performs a single pass of the corpus and
             returns a dictionary with a variety of metrics
             concerning the state of the corpus.
@@ -198,7 +198,7 @@ class AmazonCorpusReader(CategorizedCorpusReader, CorpusReader):
             counts['chars'] += len(text)
 
         # Perform single pass over paragraphs, tokenize and count
-        for doc in self.paras(fileids, categories):
+        for doc in self.paras(fileids, categories, sin_stopwords):
             for para in doc:
                 counts['paras'] += 1
 

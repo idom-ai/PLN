@@ -38,9 +38,9 @@
 \section{Descarga y preparación de la información}
 \label{sec-1}
 
-\noindent \textbf{Resumen:} En esta primera sección se descarga de uno los ficheros del corpus de comentarios de 
-\textit{Amazon} (uno sencillo y poco pesado, el de tarjetas de regalo) y se diseña la clase \textit{ProcesadorDeTexto} 
-para almacenar cada review en un fichero propio en el directorio que le corresponda sin almacenar 
+\noindent \textbf{Resumen:} En esta primera sección se descarga de uno los ficheros del corpus (o base de datos textuales) 
+de comentarios de \textit{Amazon} (uno sencillo y poco pesado, el de tarjetas de regalo) y se diseña la clase 
+\texttt{ProcesadorDeTexto} para almacenar cada review en un fichero propio en el directorio que le corresponda sin almacenar 
 reviews duplciadas. 
 
 \begin{enumerate}
@@ -50,23 +50,25 @@ reviews duplciadas.
     pruebas en un archivo dde tipo \textit{.ipynb} para, posteriormente, codificar sencillamente el archivo 
     \textit{.py} definitvo y genérico capaz de procesar cualquier fichero del corpus. 
 
-    \item Las pruebas realizadas sobre el archivo \textit{.ipynb} auxiliar permitieron construir la clase 
-    \textit{ProcesadorDeTexto}, capaz de:
+    \item Las pruebas realizadas sobre un archivo \textit{.ipynb} auxiliar, de prueba, y que no se entrega adjunto,
+     permitieron construir la clase \texttt{ProcesadorDeTexto}, capaz de:
 
     \begin{enumerate}
         \item Recibir el nombre del fichero a preprocesar (sin especificar su extensión, solo el nombre del fichero). En 
         nuestro caso 'Gift\_Cards'.
         \item Recibir una lista con las categorías que el usuario quiera almacenar para cada reseña. Nosotros aconsejamos 
-        pasarle la lista ['rating', 'title', 'text', 'parent\_asin', 'user\_id'], que almacena la puntación en estrellas del 1 al 5, 
+        pasarle la lista \texttt{['rating', 'title', 'text', 'parent\_asin', 'user\_id']}, que almacena la puntación en estrellas del 1 al 5, 
         el título (tal vez contenga información relevante), el texto per se de la reseña, una referencia al tipo de producto reseñado 
-        (que posteriormente permitirá acceder a metainformación de ser preciso) y una referencia al usuario que hace la reseña.\\
+        (que posteriormente permitirá acceder a metainformación de ser preciso) y una referencia al usuario que hace la reseña. 
+        \textbf{Nota:} la característica \texttt{'user\_id'} siempre es necesaria en la lista para asegurar que se pueden borrar los duplicados, 
+        como se explica en el siguiente punto. Una vez usada, se elimina.\\
         
         Y ahora, iterando sobre cada elemento del \textit{.jsonl} a procesar:\\
 
         \item No almacenar reseñas que, siendo del mismo usuario y al mismo producto, tienen el mismo texto y título. Se puede pensar que 
         esto debería ser parte de un posterior preprocesado. Pero al implicar iterar sobre cada elemento de nuevo, decidimos hacerlo en este
         paso para ahorrar cómputo a posteriori. 
-        \item Guardar las categorías enunciadas en la lista que se le pase de cada reseña en un fichero propio, en tres distintos directorios. 
+        \item Guardar las categorías enunciadas en la lista que se le pase de cada reseña en un fichero propio, en tres distintos directorios: 
         \textit{/positivas, /neutras} y \textit{/negativas}, a modo de etiqueta, basándonos únicamente a cual de los intervalos pertenece la
         categoría \textit{'rating'}: $rating\geq4.5$, $4.5 \geq rating \geq 1.5$ o $rating\leq1.5$. Es un criterio absurdo, 
         pero al ser configurable, de momento no nos preocuparemos por esto en esta práctica.  
@@ -77,7 +79,7 @@ reviews duplciadas.
 \noindent Por tanto, lo que podemos obtener tras esta sección es una división en directorios, basada en la puntuación de cada reseña, 
 en los que se incluyen ficheros \textit{.json}, para cada reseña, y que contienen las categorías especificadas por el usuario. Esto
 facilitará en gran medida la posterior ingesta (\ref{sec-2}) de datos por un gestor de corpus especializado en nuestro caso, 
-\textit{AmazonCorpusReader}. \textbf{Nota:} los directorios que se crean están bastante desbalanceados. Esto es, existen muchas más 
+\texttt{AmazonCorpusReader}. \textbf{Nota:} los directorios que se crean están bastante desbalanceados. Esto es, existen muchas más 
 reseñas de clase positiva que de clases neutra o negativa. Esto es, en realidad, una distribución inherente, no solo al criterio 
 seguido para el etiquetado, sino también a los propios datos. Y es que lo normal es que los usuarios hagan tantas reseñas negativas 
 o neutras como positivas. 
@@ -91,8 +93,78 @@ o neutras como positivas.
 \section{Preprocesamiento del corpus y análisis básicos}
 \label{sec-3}
 
+\noindent El preprocesamiento se incorpora a nivel de corpus reader. Para hacerlo, fue necesario (dejando de lado la actualización 
+de NLTK), si bien no modificar la funcionalidad ya implementada en la sección \ref{sec-2}, añadir bloques lógicos en algunos puntos
+para la propia implementación de la nueva funcionalidad de preprocesado. En particular, los cambios fueron los siguientes:
 
+\begin{enumerate}
+    \item Creación del método \texttt{\_limpiar()}: limpia el texto de acuerdo con los requisitos del enunciado de la práctica, en 
+    el siguiente orden: \begin{enumerate}
+        \item Eliminar etiquetas HTML, de haberlas. Todas pasan a espacio en blanco, salvo \texttt{<br />} que pasa a ser salto de 
+        línea. 
+        \item Convierte entidades \texttt{\&amp} $\to$ \texttt{\&}. 
+        \item Elimina emojis. 
+        \item Reduce puntuación repetida !!! $\to$ !. 
+        \item Reduce letras repetidas \textit{gooooood} $\to$ \textit{good}. 
+        \item Normaliza espacios conservando saltos de línea. 
+    \end{enumerate}
+    Con tan solo añadir la línea \texttt{obj['text'] = self.\_limpiar(obj['text'])}, ahora todo el resto de métodos 
+    (\texttt{texts()}, \texttt{paras()}, \texttt{sents()}, \texttt{words()} y \texttt{describe()}) reciben el texto ya limpio. 
+    \item El método \texttt{paras()} se rehace para evitar blancos: el método ahora comprueba en cada nivel 
+    (\texttt{para.strip()}, \texttt{sent.strip()}, \texttt{w.strip()}) y si es blanco se descarta (manteniendo el \texttt{yield}).
+    \item Método \texttt{\_get\_stopwords}: los métodos \texttt{paras()}, \texttt{sents()} y \texttt{words()} reciben ahora
+    un parámetro \texttt{sin\_stopwords = False}. Con \texttt{False}, se eliminan las que NLTK asume como stopwords (en inglés) 
+    a excepción de 'no', 'not' y 'nor' para evitar cambios de significado, con \texttt{True}, no. 
+    \item Retoques en el método \texttt{describe()}: ahora tiene en cuenta el número total de caracteres (se nos olvidó hacerlo)
+    en la sección \ref{sec-2}, además de aceptar el parámetro \texttt{sin\_stepwords}. 
+\end{enumerate}
 
+\section{Comentarios y conclusiones}
 
+\subsection{Comentarios}
+
+\begin{enumerate}
+    \item Tal vez el hecho de eliminar repetidos no fuera una tarea de la sección \ref{sec-1}, pues consiste más bien en 
+    preprocesamiento. Sin embargo, se nos ocurrió hacerlo el primer día de práctica, sin mucha visión de lo que sería el 
+    resultado final de la misma, por lo que decidimos dejarlo en esa sección. Además, se gana en términos de eficiencia, pues 
+    ya no es necesario volver a iterar sobre cada uno de los comentarios del corpus. 
+    \item Como propuesta exploratoria para otras prácticas, es probable que convenga integrar la clase \texttt{ProcesadorDeTexto}
+    con herramientas de procesamiento por lotes y distribuido, pues es una tarea muy pesada y paralelizable. Un comentario 
+    también relacionado con esta clase es que el nombre escogido no es el mejor, pues no es un procesador ni tampoco procesa texto
+    como tal. Su tarea es más bien darle una estructura de corpus a los datos ofrecidos por \textit{Amazon}. 
+    \item No teníamos muy claro si era lo suyo eliminar todos los comentarios escritos en un idioma distinto del inglés. 
+    Nuestra teoría es que si no hay mucho desbalanceo de comentarios entre texto escrito en inglés y texto escrito en otros 
+    idiomas, sabiendo que la cantidad de comentarios no es un problema, un modelo terminaría por aprender a clasificar sin
+    fijarse en el lenguaje en el que está escrito. 
+    \item Tuvimos problemas con la versión de NLTK porque aparentemente las versiones que manejábamos eran distintas y 
+    la funcionalidad cambiaba entre una y otra. Por favor, de encontrar algún problema en cuanto a la ejecución del 
+    código, nótese que puede ser debido a esto. Antes de suspendernos, consúltanos :`(
+    \item La implementación de todos los códigos (salvo el de pruebas y casos de uso, \textit{prueba.py}) de esta práctica 
+    es nuestra, si bien nos hemos ayudado en herramientas de inteligencia artificial generativa (Claude Sonnet 5.5)
+    (sección \ref{sec-3}), así como en los recursos bibliográficos propuestos en la práctica (sección \ref{sec-2}, \cite{bengfort2018}). 
+\end{enumerate}
+
+\subsection{Conclusiones}
+
+\begin{enumerate}
+    \item El corpus está desbalanceado hacia reseñas positivas. Esto es algo completamente irrelevante para esta 
+    primera práctica pero asumimos que no lo será para prácticas donde entrenemos modelos. Por ello, como hipótesis, 
+    creemos que la mejor forma de tratar esto sería el \textit{undersampling} para ahorrar cómputo. 
+    \item Las \textit{stopwords} suponen una gran parte del texto, pero no apotan información especialmente relevante 
+    acerca de si la reseña es positiva, neutra o negativa (por eso se han eliminado todas a excepción de 'no', 'nor' y 
+    'not'). 
+    \item
+
+\end{enumerate}
+
+\newpage
+
+\begin{thebibliography}{9}
+\bibitem{bengfort2018}
+B. Bengfort, R. Bilbro y T. Ojeda,
+\textit{Applied Text Analysis with Python: Enabling Language-Aware Data Products with Machine Learning},
+1.ª ed., O'Reilly Media, Sebastopol, CA, 2018. ISBN 978-1-4919-6304-3.
+
+\end{thebibliography}
 
 \end{document}

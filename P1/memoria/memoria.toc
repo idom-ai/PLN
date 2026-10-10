@@ -2,3 +2,6 @@
 \contentsline {section}{\numberline {1}Descarga y preparación de la información}{2}{section.1}%
 \contentsline {section}{\numberline {2}Diseñar e implementar el gestor del corpus}{2}{section.2}%
 \contentsline {section}{\numberline {3}Preprocesamiento del corpus y análisis básicos}{2}{section.3}%
+\contentsline {section}{\numberline {4}Comentarios y conclusiones}{3}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Comentarios}{3}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Conclusiones}{4}{subsection.4.2}%
