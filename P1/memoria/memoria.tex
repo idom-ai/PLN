@@ -1,0 +1,85 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-noshorthands]{babel}
+\usepackage[margin=3cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,tabularx,array}
+\usepackage{enumitem}
+\usepackage[most]{tcolorbox}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{pdflscape}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    
+    \vfill
+    {\huge \textbf{PROCESAMIENTO DEL LENGUAJE NATURAL} \par}
+    \vspace{2cm}
+    {\Large Práctica 1: Preparación y procesamiento de textos \par}
+    \vspace{1cm}
+    {\Large Universidad Autónoma de Madrid \par}
+    \vspace{1cm}
+    {\large Iván Domínguez Hernández |  ivan.dominguezh@estudiante.uam.es \par}
+    \vspace{.5cm}
+    {\large Lucas Miranda López | lucas.mirandal@estudiante.uam.es \par}
+    \vspace{1cm}
+\end{titlepage}
+
+
+\tableofcontents
+
+\newpage
+
+\section{Descarga y preparación de la información}
+\label{sec-1}
+
+\noindent \textbf{Resumen:} En esta primera sección se descarga de uno los ficheros del corpus de comentarios de 
+\textit{Amazon} (uno sencillo y poco pesado, el de tarjetas de regalo) y se diseña la clase \textit{ProcesadorDeTexto} 
+para almacenar cada review en un fichero propio en el directorio que le corresponda sin almacenar 
+reviews duplciadas. 
+
+\begin{enumerate}
+    \item La decisión de descargar el fichero \textit{Gift\_Cards.jsonl} se debe únicamente a su tamaño. 
+    Teniendo en cuenta que todos ficheros del corpus de \textit{Amazon} siguen la misma estructura JSON, 
+    lo óptimo para la realización de la práctica parecía ser escoger un fichero ligero sobre el que hacer
+    pruebas en un archivo dde tipo \textit{.ipynb} para, posteriormente, codificar sencillamente el archivo 
+    \textit{.py} definitvo y genérico capaz de procesar cualquier fichero del corpus. 
+
+    \item Las pruebas realizadas sobre el archivo \textit{.ipynb} auxiliar permitieron construir la clase 
+    \textit{ProcesadorDeTexto}, capaz de:
+
+    \begin{enumerate}
+        \item Recibir el nombre del fichero a preprocesar (sin especificar su extensión, solo el nombre del fichero). En 
+        nuestro caso 'Gift\_Cards'.
+        \item Recibir una lista con las categorías que el usuario quiera almacenar para cada reseña. Nosotros aconsejamos 
+        pasarle la lista ['rating', 'title', 'text', 'parent\_asin', 'user\_id'], que almacena la puntación en estrellas del 1 al 5, 
+        el título (tal vez contenga información relevante), el texto per se de la reseña, una referencia al tipo de producto reseñado 
+        (que posteriormente permitirá acceder a metainformación de ser preciso) y una referencia al usuario que hace la reseña.\\
+        
+        Y ahora, iterando sobre cada elemento del \textit{.jsonl} a procesar:\\
+
+        \item No almacenar reseñas que, siendo del mismo usuario y al mismo producto, tienen el mismo texto y título. Se puede pensar que 
+        esto debería ser parte de un posterior preprocesado. Pero al implicar iterar sobre cada elemento de nuevo, decidimos hacerlo en este
+        paso para ahorrar cómputo a posteriori. 
+        \item Guardar las categorías enunciadas en la lista que se le pase de cada reseña en un fichero propio, en tres distintos directorios. 
+        \textit{/positivas, /neutras} y \textit{/negativas}, a modo de etiqueta, basándonos únicamente a cual de los intervalos pertenece la
+        categoría \textit{'rating'}: $rating\geq4.5$, $4.5 \geq rating \geq 1.5$ o $rating\leq1.5$. Es un criterio absurdo, 
+        pero al ser configurable, de momento no nos preocuparemos por esto en esta práctica.  
+    \end{enumerate}
+ 
+\end{enumerate}
+
+\noindent Por tanto, lo que podemos obtener tras esta sección es una división en directorios, basada en la puntuación de cada reseña, 
+en los que se incluyen ficheros \textit{.json}, para cada reseña, y que contienen las categorías especificadas por el usuario. Esto
+facilitará en gran medida la posterior ingesta (\ref{sec-2}) de datos por un gestor de corpus especializado en nuestro caso, 
+\textit{AmazonCorpusReader}. 
+
+\section{Diseñar e implementar el gestor del corpus}
+\label{sec-2}
+
+\end{document}
