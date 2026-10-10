@@ -1,3 +1,4 @@
 \babel@toc {spanish}{}\relax 
 \contentsline {section}{\numberline {1}Descarga y preparación de la información}{2}{section.1}%
 \contentsline {section}{\numberline {2}Diseñar e implementar el gestor del corpus}{2}{section.2}%
+\contentsline {section}{\numberline {3}Preprocesamiento del corpus y análisis básicos}{2}{section.3}%

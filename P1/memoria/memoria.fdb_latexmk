@@ -1,6 +1,6 @@
 # Fdb version 4
-["pdflatex"] 1791623086 "/Users/ivandominguez/Desktop/PLN/P1/memoria/memoria.tex" "memoria.pdf" "memoria" 1791623087 0
-  "/Users/ivandominguez/Desktop/PLN/P1/memoria/memoria.tex" 1791623086 4292 0fbed90d811e6b91e32d29fa6d65800a ""
+["pdflatex"] 1791631087 "/Users/ivandominguez/Desktop/PLN/P1/memoria/memoria.tex" "memoria.pdf" "memoria" 1791631088 0
+  "/Users/ivandominguez/Desktop/PLN/P1/memoria/memoria.tex" 1791631087 4804 4fd02e14b57bfbf22aedb32e7014f1b4 ""
   "/usr/local/texlive/2023/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1136849721 2971 def0b6c1f0b107b3b936def894055589 ""
   "/usr/local/texlive/2023/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2023/texmf-dist/fonts/tfm/jknappen/ec/ecbx1000.tfm" 1136768653 3584 2d666ecf6d466d8b007246bc2f94d9da ""
@@ -197,10 +197,10 @@
   "/usr/local/texlive/2023/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1707211907 4623355 b8cad38412faebe1ce5b780a45db67bd ""
   "/usr/local/texlive/2023/texmf-var/web2c/pdftex/pdflatex.fmt" 1707211825 7883456 7b8b365eb045c7ce2ca6d17d00e59f8f ""
   "/usr/local/texlive/2023/texmf.cnf" 1678822455 577 1b2b1af17af2508fb20dd85783af4050 ""
-  "memoria.aux" 1791623087 1078 5fdb768273e1151d2b2cf5eb0838ca0e "pdflatex"
-  "memoria.out" 1791623087 538 1ca3bfb99385ac3aef86298714697c42 "pdflatex"
-  "memoria.tex" 1791623086 4292 0fbed90d811e6b91e32d29fa6d65800a ""
-  "memoria.toc" 1791623087 227 e006de181a18a06f1c1458d159ccabb7 "pdflatex"
+  "memoria.aux" 1791631088 1311 c5e647c0e8a8e682316f593f5ca5214d "pdflatex"
+  "memoria.out" 1791631088 832 580761aa3c414dbff5ab6b5c89e740ab "pdflatex"
+  "memoria.tex" 1791631087 4804 4fd02e14b57bfbf22aedb32e7014f1b4 ""
+  "memoria.toc" 1791631088 331 2d5517dad424f106d1767dce5921b5fb "pdflatex"
   (generated)
   "memoria.aux"
   "memoria.log"
