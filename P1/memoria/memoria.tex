@@ -84,11 +84,65 @@ reseñas de clase positiva que de clases neutra o negativa. Esto es, en realidad
 seguido para el etiquetado, sino también a los propios datos. Y es que lo normal es que los usuarios hagan tantas reseñas negativas 
 o neutras como positivas. 
 
+\newpage
 
 \section{Diseñar e implementar el gestor del corpus}
 \label{sec-2}
 
-\noindent A rellenar por Lucas. 
+\noindent \textbf{Resumen:} Para poder acceder al corpus en diferentes niveles (documento, párrafo, oración y 
+palabra como indica el enunciado), así como a la categoría de cada reseña, se desarrolla la clase 
+\texttt{AmazonCorpusReader}, heredera de \texttt{CategorizedCorpusReader} y \texttt{CorpusReader}. 
+La estructura de la clase está fuertemente inspirada en \texttt{HTMLCorpusReader} propuesta en el libro \cite{bengfort2018}.
+
+
+\begin{enumerate}
+    \item \textbf{Herencia:} en el constructor (\texttt{\_\_init\_\_}) se inicializan ambas clases base por separado:
+    \begin{enumerate}
+        \item \texttt{CategorizedCorpusReader.\_\_init\_\_} recibe un \texttt{cat\_pattern}, una expresión regular 
+        (\texttt{r'(positivas|neutras|negativas)/.*'}) que permite deducir automáticamente la categoría (\texttt{categories}) 
+        de cada fichero a partir del directorio en el que se encuentra.
+        \item \texttt{CorpusReader.\_\_init\_\_} recibe la ruta raíz del corpus y el patrón de los ficheros a considerar 
+        (\texttt{fileids}, por defecto \texttt{r'.*\textbackslash.json'}).
+    \end{enumerate}
+
+    \item \textbf{Método \texttt{\_resolve()}}: dado que la mayoría de métodos de la clase pueden recibir una lista de 
+    \texttt{fileids} o una lista de \texttt{categories}, este método auxiliar (inspirado en el patrón que sigue 
+    \texttt{CategorizedPlaintextCorpusReader} en NLTK) unifica ambos casos: si se reciben categorías, las traduce a 
+    la lista de ficheros correspondiente mediante \texttt{self.fileids(categories)}; si se reciben ambas a la vez, 
+    lanza un \texttt{ValueError}, al no tener sentido combinarlas.
+
+    \item \textbf{Método \texttt{docs()}}: recorre uno a uno los ficheros seleccionados (vía \texttt{\_resolve()}) y, 
+    para cada línea del \texttt{.json} correspondiente, construye un diccionario con sus campos (\texttt{title}, 
+    \texttt{text}, \texttt{rating}, \texttt{parent\_asin}\ldots) y le añade la clave \texttt{'category'} obtenida 
+    mediante el método \texttt{\_resolve\_with\_category()}. El resto de métodos de acceso hacen uso de él.
+
+    \item \textbf{Métodos de acceso a campos concretos:} a partir de \texttt{docs()} se construyen, como generadores, 
+    \texttt{titles()}, \texttt{ratings()} y \texttt{texts()}, que devuelven respectivamente cada uno el título, la puntuación 
+    y el texto de cada reseña seleccionada, y \texttt{raw()}, que devuelve el contenido en crudo de los ficheros unidos, 
+    reutilizando la función \texttt{concat()} de NLTK.
+
+    \item \textbf{Métodos de segmentación:} implementa la jerarquía habitual de un corpus reader de NLTK.
+    \begin{enumerate}
+        \item \texttt{paras()}: para cada reseña, separa su texto en párrafos (\texttt{BlanklineTokenizer}), cada párrafo en 
+        oraciones (\texttt{sent\_tokenize}) y cada oración en palabras (\texttt{word\_tokenize}), devolviendo una estructura 
+        anidada lista $\to$ lista $\to$ lista.
+        \item \texttt{sents()}: itera sobre \texttt{paras()} y «desenvuelve» un nivel, devolviendo cada oración (como lista de 
+        palabras) de forma independiente.
+        \item \texttt{words()}: itera a su vez sobre \texttt{sents()} y devuelve cada palabra individual del corpus seleccionado.
+    \end{enumerate}
+    Todos estos métodos están implementados como generadores (\texttt{yield}), de forma que el corpus nunca se carga por completo 
+    en memoria, sino que se recorre reseña a reseña.
+
+    \item \textbf{Método \texttt{describe()}:} realiza una única pasada sobre el corpus (o, más bien, el subconjunto de 
+    \texttt{fileids}/\texttt{categories} indicado) y devuelve un diccionario con las métricas habituales de caracterización 
+    de corpus: número de ficheros (\texttt{files}) y de categorías (\texttt{topics}) consideradas; número total de párrafos, 
+    oraciones y palabras (\texttt{paras}, \texttt{sents}, \texttt{words}); tamaño del vocabulario (\texttt{vocab}); diversidad 
+    léxica (\texttt{lexdiv}, palabras entre vocabulario); párrafos por documento (\texttt{ppdoc}); oraciones por párrafo 
+    (\texttt{sppar}); y tiempo de cómputo empleado (\texttt{secs}). Para ello utiliza dos objetos \texttt{nltk.FreqDist()} 
+    (uno para los contadores globales y otro para la frecuencia de cada token), evitando recorrer el corpus más de una vez.
+\end{enumerate}
+
+\newpage
 
 \section{Preprocesamiento del corpus y análisis básicos}
 \label{sec-3}
