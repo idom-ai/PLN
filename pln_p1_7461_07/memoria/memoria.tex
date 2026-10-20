@@ -173,6 +173,102 @@ para la propia implementación de la nueva funcionalidad de preprocesado. En par
     en la sección \ref{sec-2}, además de aceptar el parámetro \texttt{sin\_stepwords}. 
 \end{enumerate}
 
+\section{Estadísticas del corpus}
+\label{sec-4}
+
+\noindent \textbf{Resumen:} Para analizar el corpus se crea el script \textit{estadisticas.py}, que no implementa
+ninguna métrica desde cero, sino que aprovecha los métodos ya implementados en \texttt{AmazonCorpusReader}
+(secciones \ref{sec-2} y \ref{sec-3}). La base del análisis es el método \texttt{describe()}, al que se le suman
+algunos análisis que este no ofrece.
+
+\begin{enumerate}
+    \item \textbf{Métodos de la clase utilizados:}
+    \begin{enumerate}
+        \item \texttt{categories()} y \texttt{fileids()}: número de reseñas por categoría, es decir, el balance de clases.
+        \item \texttt{describe()}: métricas generales de cada categoría. Se llama dos veces, con y sin \textit{stopwords},
+        para ver cuánto texto suponen estas.
+        \item \texttt{ratings()}: distribución de estrellas de cada categoría. Sirve, además, para comprobar que el
+        etiquetado de la sección \ref{sec-1} se hizo bien.
+        \item \texttt{titles()} y \texttt{paras()}: longitud de títulos y reseñas (palabras y oraciones por reseña, mediana,
+        máximo y reseñas que quedan vacías tras la limpieza).
+        \item \texttt{words(sin\_stopwords=True)}: palabras más frecuentes de cada categoría, sin signos de puntuación.
+        A partir de estas frecuencias se obtienen también las palabras \textit{características} de cada categoría:
+        las que tienen mayor frecuencia relativa en ella que en el resto.
+    \end{enumerate}
+    \item \textbf{Ejecución:} \texttt{python3 estadisticas.py} analiza el corpus completo (unos 2 minutos). Con
+    \texttt{-{}-muestra N} se analiza un subconjunto aleatorio (con semilla fija, para que sea reproducible) de, como
+    mucho, $N$ reseñas por categoría. Los resultados se guardan en \textit{estadisticas.json} y en \textit{estadisticas.tex},
+    que se incluye directamente en esta memoria (tablas \ref{tab:estadisticas} y \ref{tab:top-palabras}).
+\end{enumerate}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrrr}
+\toprule
+Métrica & negativas & neutras & positivas \\
+\midrule
+Reseñas en el corpus & 12.100 & 11.568 & 124.439 \\
+\% del corpus & 8,17 & 7,81 & 84,02 \\
+Reseñas analizadas & 12.100 & 11.568 & 124.439 \\
+Caracteres & 2.418.048 & 1.584.797 & 8.327.376 \\
+Párrafos & 12.917 & 12.113 & 125.658 \\
+Oraciones & 36.934 & 25.572 & 196.146 \\
+Palabras & 526.921 & 346.770 & 1.821.590 \\
+Palabras (sin stopwords) & 299.204 & 195.276 & 1.095.203 \\
+Vocabulario & 12.749 & 10.648 & 23.702 \\
+\texttt{lexdiv} & 41,33 & 32,57 & 76,85 \\
+Párrafos por reseña & 1,07 & 1,05 & 1,01 \\
+Oraciones por párrafo & 2,86 & 2,11 & 1,56 \\
+Palabras por reseña & 43,55 & 29,98 & 14,64 \\
+Rating medio & 1,00 & 3,40 & 5,00 \\
+\bottomrule
+\end{tabular}
+\caption{Estadísticas del corpus por categoría (\texttt{AmazonCorpusReader}).}
+\label{tab:estadisticas}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+Categoría & Palabras más frecuentes (sin stopwords) \\
+\midrule
+negativas & card, gift, not, amazon, cards, n't, no, use, get, money \\
+neutras & gift, card, not, amazon, cards, n't, use, one, no, would \\
+positivas & gift, card, great, amazon, easy, cards, use, love, perfect, good \\
+\bottomrule
+\end{tabularx}
+\caption{Palabras más frecuentes por categoría.}
+\label{tab:top-palabras}
+\end{table}
+
+\noindent De las tablas anteriores (corpus completo) se extrae lo siguiente:
+
+\begin{enumerate}
+    \item \textbf{Desbalanceo:} se confirma lo que ya se intuía en la sección \ref{sec-1}: el 84\,\% de las reseñas son
+    positivas, frente a un 8,2\,\% de negativas y un 7,8\,\% de neutras.
+    \item \textbf{Longitud:} cuanto peor es la reseña, más larga. Una negativa tiene de media unas 44 palabras y 3 oraciones,
+    una neutra unas 30 y una positiva apenas 15 (el 66,5\,\% de las positivas tienen una única oración). Tiene sentido:
+    quien está contento escribe «Great gift» y se va, pero quien ha tenido un problema lo cuenta con detalle.
+    \item \textbf{\textit{Stopwords}:} suponen alrededor del 40-44\,\% de las palabras del corpus, por lo que eliminarlas
+    reduce casi a la mitad el texto a procesar.
+    \item \textbf{Vocabulario:} las palabras más frecuentes (\textit{gift}, \textit{card}, \textit{amazon}) son comunes a
+    las tres categorías y no sirven para distinguirlas, pues son propias del producto. Las palabras características,
+    en cambio, sí son muy reveladoras: \textit{dispute}, \textit{scam} o \textit{fraudulent} en las negativas;
+    \textit{tacky}, \textit{dented} o \textit{slow} en las neutras; y \textit{cutest}, \textit{no-brainer} o
+    \textit{perfect} en las positivas. Además, \textit{not} y \textit{n't} aparecen entre las más frecuentes de negativas
+    y neutras, lo que justifica haberlas conservado al filtrar las \textit{stopwords} (sección \ref{sec-3}).
+    \item \textbf{Otros idiomas y reseñas vacías:} entre las palabras características de las positivas aparecen
+    \textit{excelente} y \textit{perfecto}, es decir, hay reseñas en español (ver comentarios). Por otro lado, 397 reseñas
+    (351 de ellas positivas) quedan vacías tras la limpieza, al contener únicamente emojis o etiquetas HTML.
+\end{enumerate}
+
+\noindent \textbf{Nota:} \texttt{lexdiv} (y también \texttt{vocab}) depende del tamaño del texto: cuantas más palabras,
+más se repite cada una. Por eso las positivas tienen un \texttt{lexdiv} mucho mayor (76,85 frente a 41,33 de las
+negativas), pero no porque su vocabulario sea más pobre, sino porque tienen casi 3,5 veces más palabras que las
+negativas. Para comparar estas métricas entre categorías de forma justa conviene usar
+\texttt{-{}-muestra}, de forma que las tres tengan el mismo número de reseñas.
+
 \section{Comentarios y conclusiones}
 
 \subsection{Comentarios}

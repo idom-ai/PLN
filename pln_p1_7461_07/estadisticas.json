@@ -1,0 +1,295 @@
+{
+  "negativas": {
+    "describe": {
+      "files": 12100,
+      "topics": 1,
+      "chars": 2418048,
+      "paras": 12917,
+      "sents": 36934,
+      "words": 526921,
+      "vocab": 12749,
+      "lexdiv": 41.33037885324339,
+      "ppdoc": 1.0675206611570247,
+      "sppar": 2.859332662382906,
+      "secs": 4.538256883621216
+    },
+    "describe_sin_stopwords": {
+      "files": 12100,
+      "topics": 1,
+      "chars": 2418048,
+      "paras": 12913,
+      "sents": 36927,
+      "words": 299204,
+      "vocab": 12604,
+      "lexdiv": 23.738813075214217,
+      "ppdoc": 1.0671900826446281,
+      "sppar": 2.859676295206381,
+      "secs": 2.642806053161621
+    },
+    "ratings": {
+      "media": 1.0,
+      "distribucion": {
+        "1.0": 12100
+      }
+    },
+    "titulo_palabras_media": 5.054710743801653,
+    "longitud_resena": {
+      "palabras_media": 43.547190082644626,
+      "palabras_mediana": 30.0,
+      "palabras_max": 841,
+      "oraciones_media": 3.052396694214876,
+      "resenas_vacias": 25,
+      "resenas_1_oracion": 3975
+    },
+    "top_palabras": [
+      [
+        "card",
+        11681
+      ],
+      [
+        "gift",
+        9734
+      ],
+      [
+        "not",
+        7056
+      ],
+      [
+        "amazon",
+        4814
+      ],
+      [
+        "cards",
+        3708
+      ],
+      [
+        "n't",
+        3359
+      ],
+      [
+        "no",
+        2774
+      ],
+      [
+        "use",
+        2654
+      ],
+      [
+        "get",
+        2120
+      ],
+      [
+        "money",
+        1791
+      ]
+    ],
+    "palabras_caracteristicas": [
+      "dispute",
+      "scam",
+      "inactive",
+      "worthless",
+      "airbnb",
+      "deactivated",
+      "embarrassment",
+      "horrible",
+      "fraudulent",
+      "invalid"
+    ]
+  },
+  "neutras": {
+    "describe": {
+      "files": 11568,
+      "topics": 1,
+      "chars": 1584797,
+      "paras": 12113,
+      "sents": 25572,
+      "words": 346770,
+      "vocab": 10648,
+      "lexdiv": 32.56667918858002,
+      "ppdoc": 1.047112724757953,
+      "sppar": 2.111120283992405,
+      "secs": 3.4094326496124268
+    },
+    "describe_sin_stopwords": {
+      "files": 11568,
+      "topics": 1,
+      "chars": 1584797,
+      "paras": 12100,
+      "sents": 25557,
+      "words": 195276,
+      "vocab": 10504,
+      "lexdiv": 18.59063214013709,
+      "ppdoc": 1.0459889349930844,
+      "sppar": 2.1121487603305784,
+      "secs": 1.9565610885620117
+    },
+    "ratings": {
+      "media": 3.4031811894882433,
+      "distribucion": {
+        "2.0": 1853,
+        "3.0": 3198,
+        "4.0": 6517
+      }
+    },
+    "titulo_palabras_media": 4.38234785615491,
+    "longitud_resena": {
+      "palabras_media": 29.976659751037346,
+      "palabras_mediana": 17.0,
+      "palabras_max": 1132,
+      "oraciones_media": 2.2105809128630707,
+      "resenas_vacias": 21,
+      "resenas_1_oracion": 6087
+    },
+    "top_palabras": [
+      [
+        "gift",
+        7446
+      ],
+      [
+        "card",
+        6872
+      ],
+      [
+        "not",
+        3377
+      ],
+      [
+        "amazon",
+        2232
+      ],
+      [
+        "cards",
+        2049
+      ],
+      [
+        "n't",
+        1997
+      ],
+      [
+        "use",
+        1614
+      ],
+      [
+        "one",
+        1318
+      ],
+      [
+        "no",
+        1271
+      ],
+      [
+        "would",
+        1269
+      ]
+    ],
+    "palabras_caracteristicas": [
+      "tacky",
+      "dented",
+      "indication",
+      "labeled",
+      "dent",
+      "slow",
+      "assumed",
+      "ugly",
+      "carefully",
+      "manually"
+    ]
+  },
+  "positivas": {
+    "describe": {
+      "files": 124439,
+      "topics": 1,
+      "chars": 8327376,
+      "paras": 125658,
+      "sents": 196146,
+      "words": 1821590,
+      "vocab": 23702,
+      "lexdiv": 76.85385199561219,
+      "ppdoc": 1.0097959642877232,
+      "sppar": 1.560951153129924,
+      "secs": 23.177223920822144
+    },
+    "describe_sin_stopwords": {
+      "files": 124439,
+      "topics": 1,
+      "chars": 8327376,
+      "paras": 125566,
+      "sents": 196031,
+      "words": 1095203,
+      "vocab": 23556,
+      "lexdiv": 46.493589743589745,
+      "ppdoc": 1.0090566462282724,
+      "sppar": 1.5611789815714445,
+      "secs": 21.97884178161621
+    },
+    "ratings": {
+      "media": 5.0,
+      "distribucion": {
+        "5.0": 124439
+      }
+    },
+    "titulo_palabras_media": 3.300066699346668,
+    "longitud_resena": {
+      "palabras_media": 14.638417216467506,
+      "palabras_mediana": 9,
+      "palabras_max": 875,
+      "oraciones_media": 1.5762421748808653,
+      "resenas_vacias": 351,
+      "resenas_1_oracion": 82783
+    },
+    "top_palabras": [
+      [
+        "gift",
+        64232
+      ],
+      [
+        "card",
+        34808
+      ],
+      [
+        "great",
+        20440
+      ],
+      [
+        "amazon",
+        18659
+      ],
+      [
+        "easy",
+        18422
+      ],
+      [
+        "cards",
+        10938
+      ],
+      [
+        "use",
+        10628
+      ],
+      [
+        "love",
+        10578
+      ],
+      [
+        "perfect",
+        8309
+      ],
+      [
+        "good",
+        7536
+      ]
+    ],
+    "palabras_caracteristicas": [
+      "excelente",
+      "cutest",
+      "no-brainer",
+      "perfecto",
+      "graduates",
+      "lovers",
+      "a+++",
+      "appreciates",
+      "perfect",
+      "crowds"
+    ]
+  }
+}
