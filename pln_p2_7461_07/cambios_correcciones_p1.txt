@@ -1,0 +1,18 @@
+CAMBIOS HECHOS PARA CORREGIR LAS CRÍTICAS DE LA PRÁCTICA 1 (para la memoria de la P2)
+
+[E1] No hacéis la descarga de las reviews / no seguís el nombre del script del enunciado:
+     ProcesadorDeTexto.py pasa a llamarse pln_p1_7461_07_e1.py y tiene una función nueva, descargar_reviews(), que baja Gift_Cards.jsonl.gz de la web oficial de Amazon Reviews 2023 (o de Hugging Face si falla), lo descomprime y no repite la descarga si ya existe (--forzar).
+     El corpus se genera en corpus/, con umbrales y campos configurables, y es idéntico byte a byte al de la P1.
+
+[E2] No definís el patrón para detectar los ids de los fileids:
+     El reader pasa a json_corpus_reader.py (clase JsonCorpusReader) con DOC_PATTERN = r'(negativas|neutras|positivas)/\1_(\d+)\.json', donde (\d+) es el id de la review, y CAT_PATTERN = r'(negativas|neutras|positivas)/.*'.
+     Antes '.*\.json' aceptaba cualquier fichero (p. ej. neutras/notas.json); ahora solo se aceptan reviews.
+
+[E3] Los flags de preprocesamiento hay que hacerlos por tarea:
+     _limpiar() se divide en una función por tarea, cada una con su flag en el constructor: limpiar_html, limpiar_emojis, limpiar_puntuacion, limpiar_letras, limpiar_espacios (True por defecto) y quitar_stopwords (False), que sustituye al parámetro sin_stopwords de paras/sents/words/describe.
+     Con los flags por defecto el resultado es el mismo que el de la P1.
+
+[M] Cuando describáis funciones, siempre se deben definir los parámetros de entrada:
+     Todas las funciones de pln_p1_7461_07_e1.py y json_corpus_reader.py tienen docstring con Parámetros y Devuelve; en la memoria de la P2 hay que indicar los parámetros de cada función que se describa.
+
+[Otros, no pedidos por el profesor] Arreglado describe() con un único fileid como str; eliminado tokenize() (fallaba); tokenized() queda pendiente para el ejercicio 1 de la P2.
