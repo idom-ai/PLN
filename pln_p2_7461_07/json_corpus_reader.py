@@ -24,6 +24,7 @@ import time
 import nltk
 from nltk.corpus.reader.api import CorpusReader, CategorizedCorpusReader
 from nltk.corpus.reader.util import concat
+from nltk import pos_tag_sents
 from nltk.tokenize import BlanklineTokenizer, sent_tokenize, word_tokenize
 
 # ----------------------------------------------------------------------
@@ -334,6 +335,53 @@ class JsonCorpusReader(CategorizedCorpusReader, CorpusReader):
     # ------------------------------------------------------------------
     # Segmentación: review -> párrafos -> oraciones -> palabras
     # ------------------------------------------------------------------
+    def _segmentar(self, texto):
+        """
+        Divide el texto de una review en párrafos, cada párrafo en oraciones y cada
+        oración en palabras. Descarta párrafos, oraciones y palabras en blanco.
+
+        Parámetros:
+            texto (str): texto (ya preprocesado) de una review.
+
+        Devuelve:
+            list: lista de párrafos -> oraciones -> palabras (str).
+        """
+        doc = []
+        for para in BlanklineTokenizer().tokenize(texto):
+            sents = []
+            for sent in sent_tokenize(para):
+                words = [w for w in word_tokenize(sent) if w.strip()]
+                if words:
+                    sents.append(words)
+            if sents:
+                doc.append(sents)
+        return doc
+
+    def _filtrar_stopwords(self, doc):
+        """
+        Elimina las stopwords de una review ya segmentada. Si una oración o un párrafo
+        se queda vacío, también se elimina.
+
+        Parámetros:
+            doc (list): párrafos -> oraciones -> tokens, donde cada token es una palabra
+                (str) o una tupla (palabra, etiqueta PoS).
+
+        Devuelve:
+            list: la misma estructura sin las stopwords.
+        """
+        stop = self._get_stopwords()
+        filtrado = []
+        for para in doc:
+            sents = []
+            for sent in para:
+                sent = [t for t in sent
+                        if (t[0] if isinstance(t, tuple) else t).lower() not in stop]
+                if sent:
+                    sents.append(sent)
+            if sents:
+                filtrado.append(sents)
+        return filtrado
+
     def paras(self, fileids=None, categories=None):
         """
         Para cada review, devuelve sus párrafos como listas de oraciones y cada oración
@@ -347,23 +395,10 @@ class JsonCorpusReader(CategorizedCorpusReader, CorpusReader):
         Devuelve:
             generator de list: por cada review, lista de párrafos -> oraciones -> palabras.
         """
-        stop = self._get_stopwords() if self.quitar_stopwords else None
         for texto in self.texts(fileids, categories):
-            doc = []
-            for para in BlanklineTokenizer().tokenize(texto):
-                if not para.strip():
-                    continue
-                sents = []
-                for sent in sent_tokenize(para):
-                    if not sent.strip():
-                        continue
-                    words = [w for w in word_tokenize(sent) if w.strip()]
-                    if stop is not None:
-                        words = [w for w in words if w.lower() not in stop]
-                    if words:
-                        sents.append(words)
-                if sents:
-                    doc.append(sents)
+            doc = self._segmentar(texto)
+            if self.quitar_stopwords:
+                doc = self._filtrar_stopwords(doc)
             yield doc
 
     def sents(self, fileids=None, categories=None):
@@ -400,13 +435,29 @@ class JsonCorpusReader(CategorizedCorpusReader, CorpusReader):
     # Práctica 2
     def tokenized(self, fileids=None, categories=None):
         """
-        EJERCICIO 1 (Práctica 2): devolverá los textos con sus etiquetas gramaticales (PoS).
+        EJERCICIO 1 (Práctica 2): devuelve cada review segmentada y con la etiqueta
+        gramatical (PoS, conjunto de etiquetas Penn Treebank) de cada palabra.
+
+        El etiquetado se hace sobre las oraciones completas y, si quitar_stopwords está
+        activado, las stopwords se eliminan después: así el etiquetador ve el contexto
+        real de cada palabra.
 
         Parámetros:
             fileids (str | list | None): fichero o lista de ficheros. Por defecto, todos.
             categories (str | list | None): categoría o lista de categorías.
+                No se puede usar a la vez que fileids.
+
+        Devuelve:
+            generator de list: por cada review, lista de párrafos -> oraciones ->
+                tuplas (palabra, etiqueta), p. ej. [[[('Great', 'JJ'), ('gift', 'NN')]]].
         """
-        raise NotImplementedError('Ejercicio 1 de la Práctica 2: pendiente de implementar')
+        for texto in self.texts(fileids, categories):
+            # pos_tag_sents etiqueta todas las oraciones del párrafo en una sola llamada
+            # (llamar a pos_tag oración a oración es unas 10 veces más lento)
+            doc = [pos_tag_sents(para) for para in self._segmentar(texto)]
+            if self.quitar_stopwords:
+                doc = self._filtrar_stopwords(doc)
+            yield doc
 
     # ------------------------------------------------------------------
     # Estadísticas

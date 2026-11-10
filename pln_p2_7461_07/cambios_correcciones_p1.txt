@@ -16,3 +16,23 @@ CAMBIOS HECHOS PARA CORREGIR LAS CRÍTICAS DE LA PRÁCTICA 1 (para la memoria de
      Todas las funciones de pln_p1_7461_07_e1.py y json_corpus_reader.py tienen docstring con Parámetros y Devuelve; en la memoria de la P2 hay que indicar los parámetros de cada función que se describa.
 
 [Otros, no pedidos por el profesor] Arreglado describe() con un único fileid como str; eliminado tokenize() (fallaba); tokenized() queda pendiente para el ejercicio 1 de la P2.
+
+PRÁCTICA 2
+
+[P2-E1] tokenized(fileids, categories) en JsonCorpusReader: devuelve cada review como párrafos -> oraciones -> tuplas (palabra, etiqueta PoS Penn Treebank), p. ej. ('Great', 'JJ').
+     Se etiqueta la oración completa con pos_tag_sents (unas 10 veces más rápido que pos_tag por oración) y, si quitar_stopwords está activo, las stopwords se quitan después para no perder contexto.
+     La segmentación pasa a _segmentar() y el filtrado de stopwords a _filtrar_stopwords(), compartidos por paras() y tokenized(); paras() sigue dando lo mismo que en la P1.
+
+[P2-E2] CorpusLoader(reader, splitter=StratifiedKFold, folds=3, shuffle=True, categories=None, n_por_categoria=None, semilla=42): guarda los fileids y su categoría (calculada una vez) y crea la validación cruzada; StratifiedKFold mantiene en cada fold la proporción de clases del corpus (desbalanceado).
+     fileids(idx), documents(idx) (reviews etiquetadas con reader.tokenized(), como lista para que GridSearchCV pueda indexarlas) y labels(idx); __iter__ devuelve (X_train, X_test, y_train, y_test) por fold.
+     n_por_categoria toma como mucho N reviews al azar por categoría (submuestreo reproducible con semilla) para equilibrar clases y reducir cómputo; probado: cada review sale en test una sola vez.
+     Basado en el CorpusLoader del libro (Bengfort et al., cap. 5, con KFold); cambia: StratifiedKFold como parámetro, etiquetas precalculadas, documents() con tokenized() y submuestreo.
+
+[P2-E3] TextNormalizer(normalizacion='lemma', quitar_stopwords=False, incluir_pos=False), hereda de TransformerMixin y BaseEstimator: recibe reviews etiquetadas y devuelve una lista de tokens por review, sin puntuación, en minúsculas y lematizados.
+     _is_punct (nombre del enunciado; la plantilla decía is_punct; categoría Unicode 'P*'), lemmatize (WordNet con la etiqueta PoS: N, V, J, R; por defecto sustantivo; se pasa a minúsculas antes porque WordNet no lematiza 'Loves'), normalize, fit (no aprende, devuelve self) y transform.
+     Opciones para el grid search: normalizacion 'lemma' / 'stem' (Snowball) / None, quitar_stopwords (salvo no/nor/not) e incluir_pos ('love_VBZ'); el __init__ solo guarda parámetros para que GridSearchCV pueda clonarlo.
+
+[P2-E4] SentimentClassifier(estimator=None, reductor=None, ngram_range=(1, 1), min_df=1, normalizacion, quitar_stopwords, incluir_pos) en sentiment_classifier.py (nombre del enunciado; la plantilla decía sklearn_pipeline.py): fit() construye y entrena el Pipeline normalizer -> TF-IDF -> [reductor] -> classifier; predict() lo usa; score() lo da ClassifierMixin.
+     Por defecto LogisticRegression(max_iter=1000) y sin reducción; estimator y reductor se copian con clone() para no modificar los objetos del usuario; el __init__ solo guarda parámetros (necesario para GridSearchCV).
+     TfidfVectorizer recibe listas de tokens ya normalizados (preprocessor/tokenizer = _identidad, lowercase=False), así ngram_range sí se aplica; _identidad es una función con nombre (no lambda) para poder serializarla con n_jobs=-1.
+     Herencia ClassifierMixin, BaseEstimator (y TransformerMixin, BaseEstimator en TextNormalizer): con BaseEstimator delante, sklearn >= 1.6 no lo reconoce como clasificador y GridSearchCV usa KFold sin estratificar (F1 ~ 0 porque X_train viene ordenado por clase).
