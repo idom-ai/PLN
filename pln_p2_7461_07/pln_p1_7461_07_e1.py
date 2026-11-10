@@ -10,6 +10,7 @@ Pasos:
          <salida>/neutras/neutras_<id>.json
          <salida>/negativas/negativas_<id>.json
      donde <id> es un número correlativo (1, 2, 3...) dentro de cada categoría.
+     Clases: positivas = 4 y 5 estrellas, neutras = 2 y 3, negativas = 1.
 
 Uso:
   python3 pln_p1_7461_07_e1.py                          # Gift_Cards -> carpeta corpus/
@@ -95,7 +96,7 @@ class ProcesadorDeTexto:
 
     def __init__(self, fichero: str, campos: List[str] = CAMPOS_POR_DEFECTO,
                  carpeta_salida: str = 'corpus',
-                 umbral_positiva: float = 4.5, umbral_negativa: float = 1.5):
+                 umbral_positiva: float = 3.5, umbral_negativa: float = 1.5):
         """
         Parámetros:
             fichero (str): ruta del fichero .jsonl descargado (una review por línea).
@@ -104,9 +105,10 @@ class ProcesadorDeTexto:
             carpeta_salida (str): carpeta raíz del corpus; dentro se crean positivas/,
                 neutras/ y negativas/. Por defecto, 'corpus'.
             umbral_positiva (float): rating mínimo para que una review sea positiva.
-                Por defecto 4.5 (es decir, solo las de 5 estrellas).
+                Por defecto 3.5 (es decir, las de 4 y 5 estrellas).
             umbral_negativa (float): rating máximo para que una review sea negativa.
-                Por defecto 1.5 (es decir, solo las de 1 estrella). El resto son neutras.
+                Por defecto 1.5 (es decir, solo las de 1 estrella). El resto (2 y 3
+                estrellas) son neutras.
         """
         self.__fichero = fichero
         self.__campos = campos
@@ -143,11 +145,17 @@ class ProcesadorDeTexto:
 
         Devuelve:
             dict: número de reviews guardadas por categoría,
-                p. ej. {'positivas': 124439, 'neutras': 11568, 'negativas': 12100}.
+                p. ej. {'positivas': 130991, 'neutras': 5064, 'negativas': 12124}.
         """
         contadores = {'positivas': 0, 'neutras': 0, 'negativas': 0}
         for categoria in contadores:
-            os.makedirs(os.path.join(self.__carpeta_salida, categoria), exist_ok=True)
+            carpeta = os.path.join(self.__carpeta_salida, categoria)
+            os.makedirs(carpeta, exist_ok=True)
+            # Si ya hay reviews de otra ejecución (p. ej. con otros umbrales), al numerar de
+            # nuevo quedarían ficheros viejos mezclados con los nuevos: se pide borrarlas antes.
+            if any(nombre.endswith('.json') for nombre in os.listdir(carpeta)):
+                raise RuntimeError(f'{carpeta} ya tiene reviews de otra ejecución. '
+                                   f'Borra la carpeta {self.__carpeta_salida} y vuelve a ejecutar.')
 
         vistos = set()
         with open(self.__fichero, 'r', encoding='utf-8') as fp:

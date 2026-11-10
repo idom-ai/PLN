@@ -15,7 +15,7 @@ class CorpusLoader(object):
     """
 
     def __init__(self, reader, splitter=StratifiedKFold, folds=3, shuffle=True, categories=None,
-                 n_por_categoria=None, semilla=42):
+                 n_por_categoria=None, n_total=None, semilla=42):
         """
         Parámetros:
             reader (JsonCorpusReader): lector del corpus del que se sacan las reviews.
@@ -26,11 +26,22 @@ class CorpusLoader(object):
             shuffle (bool): si es True, se barajan las reviews antes de partir. Por defecto, True.
             categories (str | list | None): categorías que se usan. Por defecto, todas.
             n_por_categoria (int | None): si se indica, se toman como mucho ese número de
-                reviews al azar de cada categoría (submuestreo, para equilibrar las clases y
-                reducir el tiempo de cómputo). Por defecto None: todas las reviews.
+                reviews al azar de cada categoría (submuestreo que equilibra las clases).
+                Por defecto None.
+            n_total (int | None): si se indica, se toman unas n_total reviews al azar
+                conservando la proporción original de cada categoría (submuestreo
+                estratificado; p. ej. con 10000: ~8400 positivas, ~820 negativas y ~780
+                neutras). No se puede usar a la vez que n_por_categoria. Por defecto None.
             semilla (int): semilla aleatoria del submuestreo y del barajado, para que los
                 resultados sean reproducibles. Por defecto, 42.
+
+            Con n_por_categoria=None y n_total=None se usan todas las reviews. Con la misma
+            semilla las muestras están anidadas: la de 5000 reviews está dentro de la de
+            10000, y esta dentro de la de 20000 (solo se van añadiendo reviews).
         """
+        if n_por_categoria is not None and n_total is not None:
+            raise ValueError('Usa n_por_categoria o n_total, no los dos')
+
         self.reader = reader
 
         # Validación cruzada elegida (random_state solo se admite si se baraja)
@@ -38,19 +49,26 @@ class CorpusLoader(object):
                                  random_state=semilla if shuffle else None)
 
         # Identificadores de las reviews
-        if n_por_categoria is None:
+        if n_por_categoria is None and n_total is None:
             fileids = reader.fileids(categories=categories)
         else:
             if categories is None:
                 categories = reader.categories()
             elif isinstance(categories, str):
                 categories = [categories]
+            n_corpus = len(reader.fileids(categories=categories))
             rng = np.random.RandomState(semilla)
             fileids = []
             for categoria in categories:
                 ids = reader.fileids(categories=categoria)
-                n = min(n_por_categoria, len(ids))
-                fileids.extend(rng.choice(ids, n, replace=False))
+                if n_por_categoria is not None:
+                    n = min(n_por_categoria, len(ids))
+                else:
+                    # misma proporción que en el corpus completo
+                    n = min(round(n_total * len(ids) / n_corpus), len(ids))
+                # Se baraja la categoría entera y se cogen las n primeras: así, con la
+                # misma semilla, una muestra pequeña es el principio de una más grande.
+                fileids.extend(rng.permutation(ids)[:n])
             fileids = sorted(fileids)
 
         self.files = np.asarray(fileids)
@@ -100,8 +118,8 @@ class CorpusLoader(object):
                 en el mismo orden que fileids(idx).
         """
         if idx is None:
-            return list(self._labels)
-        return list(self._labels[idx])
+            return self._labels.tolist()
+        return self._labels[idx].tolist()
 
     def __iter__(self):
         """
