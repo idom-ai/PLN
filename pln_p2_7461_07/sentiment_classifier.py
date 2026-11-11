@@ -16,6 +16,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin, clone
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
+from sklearn.utils.class_weight import compute_sample_weight
 
 from text_normalizer import TextNormalizer
 
@@ -42,7 +43,7 @@ class SentimentClassifier(ClassifierMixin, BaseEstimator):
     """
 
     def __init__(self, estimator=None, reductor=None, ngram_range=(1, 1), min_df=1,
-                 normalizacion='lemma', quitar_stopwords=False, incluir_pos=False):
+                 class_weight=None, normalizacion='lemma', quitar_stopwords=False, incluir_pos=False):
         """
         Solo se guardan los parámetros, con el mismo nombre, para que GridSearchCV pueda
         leerlos y cambiarlos. El pipeline se construye en fit().
@@ -58,6 +59,13 @@ class SentimentClassifier(ClassifierMixin, BaseEstimator):
                 (1, 2) palabras y parejas de palabras seguidas. Por defecto (1, 1).
             min_df (int | float): TF-IDF ignora los términos que aparecen en menos reviews
                 que este número (o proporción). Por defecto 1: no ignora ninguno.
+            class_weight (str | dict | None): peso de cada clase al entrenar, para que
+                equivocarse con una clase cueste más:
+                None (por defecto): todas pesan lo mismo.
+                'balanced': peso inversamente proporcional al número de reviews de la clase.
+                dict: pesos a mano, p. ej. {'positivas': 1, 'negativas': 20, 'neutras': 50}.
+                Se aplica igual a cualquier clasificador, pasándole a cada review el peso de
+                su clase (sample_weight), también a MultinomialNB, que no tiene class_weight.
             normalizacion (str | None): 'lemma', 'stem' o None (ver TextNormalizer).
             quitar_stopwords (bool): elimina las stopwords (ver TextNormalizer). Por defecto False.
             incluir_pos (bool): añade la etiqueta PoS a cada token (ver TextNormalizer).
@@ -67,6 +75,7 @@ class SentimentClassifier(ClassifierMixin, BaseEstimator):
         self.reductor = reductor
         self.ngram_range = ngram_range
         self.min_df = min_df
+        self.class_weight = class_weight
         self.normalizacion = normalizacion
         self.quitar_stopwords = quitar_stopwords
         self.incluir_pos = incluir_pos
@@ -105,7 +114,8 @@ class SentimentClassifier(ClassifierMixin, BaseEstimator):
 
     def fit(self, X, y):
         """
-        Construye el pipeline y lo entrena.
+        Construye el pipeline y lo entrena. Si hay class_weight, cada review se entrena con el
+        peso de su clase.
 
         Parámetros:
             X (list): reviews etiquetadas, como las devuelve CorpusLoader.documents().
@@ -115,7 +125,12 @@ class SentimentClassifier(ClassifierMixin, BaseEstimator):
             SentimentClassifier: el propio objeto (self), ya entrenado.
         """
         self.pipeline_ = self._crear_pipeline()
-        self.pipeline_.fit(X, y)
+        if self.class_weight is None:
+            self.pipeline_.fit(X, y)
+        else:
+            # peso de cada review = peso de su clase; el Pipeline se lo pasa solo al clasificador
+            pesos = compute_sample_weight(self.class_weight, y)
+            self.pipeline_.fit(X, y, classifier__sample_weight=pesos)
         self.classes_ = self.pipeline_.classes_
         return self
 

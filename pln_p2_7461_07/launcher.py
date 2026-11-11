@@ -5,11 +5,11 @@ Pasos (los del enunciado):
   1. Crea el CorpusReader (JsonCorpusReader).
   2. Crea el CorpusLoader con todo el corpus y 3 folds estratificados.
   3. Por cada fold, crea un GridSearchCV con el SentimentClassifier que prueba:
-       a. los modelos LogisticRegression, MultinomialNB y SGDClassifier
-          (y además un clasificador lineal con focal loss, ver focal_loss.py),
+       a. los modelos LogisticRegression, MultinomialNB y SGDClassifier,
        b. reducción con TruncatedSVD (300 dimensiones), con SelectKBest (chi2, 5000) y sin reducción,
        c. n-gramas (1, 1) y (1, 2),
-     y además el peso de las clases en LogReg y SGD, alpha en NB y gamma en la focal loss.
+     y además el peso de las clases (para que equivocarse con neutras y negativas cueste más
+     al entrenar): sin pesos, 'balanced' y unos pesos agresivos; y alpha en NB.
   4. Ejecuta todas las pruebas, con un proceso por fold (los folds van en paralelo y, dentro
      de cada uno, GridSearchCV reparte las configuraciones entre los núcleos que quedan).
      La mejor configuración se elige por F1 macro con validación cruzada interna sobre el
@@ -39,35 +39,38 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from sklearn.naive_bayes import MultinomialNB
 
 from corpus_loader import CorpusLoader
-from focal_loss import FocalLossClassifier
 from json_corpus_reader import JsonCorpusReader
 from sentiment_classifier import SentimentClassifier
 
 CORPUS = 'corpus'
 GRAFICAS = 'graficas'
-N_REVIEWS = None        # None = todo el corpus (con un número, muestra con la proporción original)
+N_REVIEWS = 50000        # None = todo el corpus (con un número, muestra con la proporción original)
 FOLDS = 3
 CLASES = ['negativas', 'neutras', 'positivas']
-MODELOS = ['LogisticRegression', 'MultinomialNB', 'SGDClassifier', 'FocalLossClassifier']
+MODELOS = ['LogisticRegression', 'MultinomialNB', 'SGDClassifier']
 
 NGRAMAS = [(1, 1), (1, 2)]
 REDUCTORES = [None,                                              # sin reducción
               TruncatedSVD(n_components=300, random_state=42),   # 300 dimensiones (LSA)
               SelectKBest(chi2, k=5000)]                         # las 5000 características más útiles
 
+# Peso de cada clase al entrenar (equivocarse con una review de esa clase cuesta ese peso):
+#   None: todas igual.
+#   'balanced': inversamente proporcional al número de reviews de la clase; con todo el corpus
+#               sale aprox. positivas 1 : negativas 11 : neutras 26.
+#   PESOS_AGRESIVOS: aproximadamente el doble que 'balanced' para neutras y negativas.
+PESOS_AGRESIVOS = {'positivas': 1, 'negativas': 20, 'neutras': 50}
+PESOS = [None, 'balanced', PESOS_AGRESIVOS]
+
 # Lista de rejillas independientes. MultinomialNB va aparte porque no admite valores
 # negativos, y TruncatedSVD los produce.
 PARAM_GRID = [
-    {'estimator': [LogisticRegression(max_iter=1000),
-                   LogisticRegression(max_iter=1000, class_weight='balanced')],
-     'reductor': REDUCTORES, 'ngram_range': NGRAMAS},
-    {'estimator': [SGDClassifier(random_state=42),
-                   SGDClassifier(random_state=42, class_weight='balanced')],
-     'reductor': REDUCTORES, 'ngram_range': NGRAMAS},
+    {'estimator': [LogisticRegression(max_iter=1000)],
+     'reductor': REDUCTORES, 'ngram_range': NGRAMAS, 'class_weight': PESOS},
+    {'estimator': [SGDClassifier(random_state=42)],
+     'reductor': REDUCTORES, 'ngram_range': NGRAMAS, 'class_weight': PESOS},
     {'estimator': [MultinomialNB(), MultinomialNB(alpha=0.1)],
-     'reductor': [None, SelectKBest(chi2, k=5000)], 'ngram_range': NGRAMAS},
-    {'estimator': [FocalLossClassifier(gamma=1), FocalLossClassifier(gamma=2)],
-     'reductor': REDUCTORES, 'ngram_range': NGRAMAS},
+     'reductor': [None, SelectKBest(chi2, k=5000)], 'ngram_range': NGRAMAS, 'class_weight': PESOS},
 ]
 
 # Color de cada clase en la gráfica (paleta categórica validada)
@@ -79,10 +82,11 @@ def describir(params):
     Escribe una configuración de forma legible.
 
     Parámetros:
-        params (dict): parámetros del SentimentClassifier ('estimator', 'reductor', 'ngram_range').
+        params (dict): parámetros del SentimentClassifier ('estimator', 'reductor',
+            'ngram_range' y 'class_weight').
 
     Devuelve:
-        str: p. ej. "LogisticRegression(class_weight=balanced) | (1, 2)-gramas | SVD 300".
+        str: p. ej. "LogisticRegression | (1, 2)-gramas | SVD 300 | pesos balanced".
     """
     est = params['estimator']
     por_defecto = type(est)().get_params()
@@ -96,7 +100,14 @@ def describir(params):
         reduccion = f'SVD {red.n_components}'
     else:
         reduccion = f'chi2 k={red.k}'
-    return f'{modelo} | {params["ngram_range"]}-gramas | {reduccion}'
+    pesos = params.get('class_weight')
+    if pesos is None:
+        texto_pesos = 'sin pesos'
+    elif pesos == 'balanced':
+        texto_pesos = 'pesos balanced'
+    else:
+        texto_pesos = 'pesos agresivos'
+    return f'{modelo} | {params["ngram_range"]}-gramas | {reduccion} | {texto_pesos}'
 
 
 def evaluar(modelo, X_test, y_test):

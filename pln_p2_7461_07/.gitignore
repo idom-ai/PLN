@@ -5,3 +5,4 @@ memoria.log
 memoria.out
 memoria.synctex.gz
 memoria.toc
+__pycache__/
