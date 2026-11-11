@@ -1,0 +1,10 @@
+fold,modelo,configuracion,f1_macro_interno,accuracy,f1_macro,negativas,neutras,positivas
+1,LogisticRegression,"LogisticRegression | (1, 2)-gramas | sin reducción | pesos balanced",0.629,0.8921,0.6311,0.7962,0.3649,0.9213
+1,MultinomialNB,"MultinomialNB(alpha=0.1) | (1, 2)-gramas | sin reducción | pesos balanced",0.6116,0.8735,0.6064,0.816,0.3526,0.8989
+1,SGDClassifier,"SGDClassifier | (1, 2)-gramas | sin reducción | pesos balanced",0.631,0.8945,0.6342,0.8013,0.3667,0.9236
+2,LogisticRegression,"LogisticRegression | (1, 2)-gramas | sin reducción | pesos balanced",0.6183,0.8915,0.638,0.7925,0.4095,0.9193
+2,MultinomialNB,"MultinomialNB(alpha=0.1) | (1, 2)-gramas | sin reducción | pesos balanced",0.6042,0.8746,0.6166,0.8072,0.406,0.8989
+2,SGDClassifier,"SGDClassifier | (1, 2)-gramas | sin reducción | pesos balanced",0.6227,0.8963,0.6422,0.7867,0.4077,0.9253
+3,LogisticRegression,"LogisticRegression | (1, 2)-gramas | sin reducción | pesos balanced",0.6293,0.8866,0.6237,0.7652,0.3825,0.9173
+3,MultinomialNB,"MultinomialNB(alpha=0.1) | (1, 2)-gramas | sin reducción | pesos balanced",0.6115,0.8802,0.6149,0.8004,0.3667,0.9075
+3,SGDClassifier,"SGDClassifier | (1, 2)-gramas | sin reducción | pesos balanced",0.633,0.89,0.6291,0.7777,0.3842,0.92

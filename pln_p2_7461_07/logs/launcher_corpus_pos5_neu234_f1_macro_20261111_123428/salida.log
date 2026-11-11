@@ -1,0 +1,69 @@
+[log] logs\launcher_corpus_pos5_neu234_f1_macro_20261111_123428\salida.log (python launcher.py --corpus corpus_pos5_neu234)
+Corpus corpus_pos5_neu234: 50000 reviews (negativas 4091, neutras 3911, positivas 41998), selección por f1_macro, 3 folds en paralelo, 5 núcleos por fold
+
+=== Fold 3 (60 configuraciones, 915 s) ===
+  Las 5 mejores configuraciones (f1_macro interno):
+    0.627  SGDClassifier | (1, 2)-gramas | sin reducción | pesos balanced
+    0.626  LogisticRegression | (1, 2)-gramas | sin reducción | pesos balanced
+    0.614  MultinomialNB(alpha=0.1) | (1, 2)-gramas | sin reducción | pesos balanced
+    0.608  SGDClassifier | (1, 2)-gramas | chi2 k=5000 | pesos balanced
+    0.606  LogisticRegression | (1, 1)-gramas | sin reducción | sin pesos
+  Mejor configuración de cada modelo, medida en el test del fold:
+    LogisticRegression   accuracy 0.822 | F1 macro 0.635 | neg 0.78 | neu 0.42 | pos 0.86
+      <- LogisticRegression | (1, 2)-gramas | sin reducción | pesos balanced
+    MultinomialNB        accuracy 0.825 | F1 macro 0.621 | neg 0.77 | neu 0.39 | pos 0.87
+      <- MultinomialNB(alpha=0.1) | (1, 2)-gramas | sin reducción | pesos balanced
+    SGDClassifier        accuracy 0.820 | F1 macro 0.630 | neg 0.79 | neu 0.42 | pos 0.86
+      <- SGDClassifier | (1, 2)-gramas | sin reducción | pesos balanced
+
+=== Fold 1 (60 configuraciones, 916 s) ===
+  Las 5 mejores configuraciones (f1_macro interno):
+    0.631  SGDClassifier | (1, 2)-gramas | sin reducción | pesos balanced
+    0.630  LogisticRegression | (1, 2)-gramas | sin reducción | pesos balanced
+    0.618  MultinomialNB(alpha=0.1) | (1, 2)-gramas | sin reducción | pesos balanced
+    0.609  SGDClassifier | (1, 2)-gramas | chi2 k=5000 | pesos balanced
+    0.608  SGDClassifier | (1, 1)-gramas | chi2 k=5000 | pesos balanced
+  Mejor configuración de cada modelo, medida en el test del fold:
+    LogisticRegression   accuracy 0.816 | F1 macro 0.635 | neg 0.79 | neu 0.42 | pos 0.85
+      <- LogisticRegression | (1, 2)-gramas | sin reducción | pesos balanced
+    MultinomialNB        accuracy 0.820 | F1 macro 0.619 | neg 0.81 | neu 0.36 | pos 0.86
+      <- MultinomialNB(alpha=0.1) | (1, 2)-gramas | sin reducción | pesos balanced
+    SGDClassifier        accuracy 0.822 | F1 macro 0.632 | neg 0.81 | neu 0.40 | pos 0.86
+      <- SGDClassifier | (1, 2)-gramas | sin reducción | pesos balanced
+
+=== Fold 2 (60 configuraciones, 917 s) ===
+  Las 5 mejores configuraciones (f1_macro interno):
+    0.630  SGDClassifier | (1, 2)-gramas | sin reducción | pesos balanced
+    0.627  LogisticRegression | (1, 2)-gramas | sin reducción | pesos balanced
+    0.617  MultinomialNB(alpha=0.1) | (1, 2)-gramas | sin reducción | pesos balanced
+    0.611  SGDClassifier | (1, 2)-gramas | chi2 k=5000 | pesos balanced
+    0.607  SGDClassifier | (1, 1)-gramas | sin reducción | pesos balanced
+  Mejor configuración de cada modelo, medida en el test del fold:
+    LogisticRegression   accuracy 0.830 | F1 macro 0.638 | neg 0.82 | neu 0.38 | pos 0.87
+      <- LogisticRegression | (1, 2)-gramas | sin reducción | pesos balanced
+    MultinomialNB        accuracy 0.828 | F1 macro 0.625 | neg 0.82 | neu 0.37 | pos 0.87
+      <- MultinomialNB(alpha=0.1) | (1, 2)-gramas | sin reducción | pesos balanced
+    SGDClassifier        accuracy 0.822 | F1 macro 0.634 | neg 0.84 | neu 0.40 | pos 0.86
+      <- SGDClassifier | (1, 2)-gramas | sin reducción | pesos balanced
+
+=== LAS 10 MEJORES CONFIGURACIONES (f1_macro interno, media de 3 folds; el resto en todas_configuraciones.csv) ===
+  acc 0.827 | F1 0.629 | neg 0.79 | neu 0.38 | pos 0.87  SGDClassifier | (1, 2)-gramas | sin reducción | pesos balanced
+  acc 0.820 | F1 0.628 | neg 0.79 | neu 0.39 | pos 0.86  LogisticRegression | (1, 2)-gramas | sin reducción | pesos balanced
+  acc 0.821 | F1 0.616 | neg 0.80 | neu 0.37 | pos 0.87  MultinomialNB(alpha=0.1) | (1, 2)-gramas | sin reducción | pesos balanced
+  acc 0.815 | F1 0.609 | neg 0.81 | neu 0.37 | pos 0.86  SGDClassifier | (1, 2)-gramas | chi2 k=5000 | pesos balanced
+  acc 0.799 | F1 0.606 | neg 0.79 | neu 0.40 | pos 0.84  SGDClassifier | (1, 1)-gramas | sin reducción | pesos balanced
+  acc 0.792 | F1 0.605 | neg 0.78 | neu 0.42 | pos 0.83  LogisticRegression | (1, 2)-gramas | chi2 k=5000 | pesos balanced
+  acc 0.889 | F1 0.604 | neg 0.61 | neu 0.12 | pos 0.99  LogisticRegression | (1, 1)-gramas | sin reducción | sin pesos
+  acc 0.888 | F1 0.603 | neg 0.61 | neu 0.12 | pos 0.99  LogisticRegression | (1, 1)-gramas | chi2 k=5000 | sin pesos
+  acc 0.890 | F1 0.602 | neg 0.61 | neu 0.11 | pos 0.99  LogisticRegression | (1, 2)-gramas | sin reducción | sin pesos
+  acc 0.798 | F1 0.602 | neg 0.80 | neu 0.39 | pos 0.83  SGDClassifier | (1, 1)-gramas | chi2 k=5000 | pesos balanced
+
+=== CONFIGURACIÓN SUGERIDA DE CADA MODELO (test, media ± desviación de 3 folds) ===
+  LogisticRegression   accuracy 0.823 ± 0.006 | F1 macro 0.636 ± 0.002 | neg 0.80 ± 0.02 | neu 0.41 ± 0.02 | pos 0.86 ± 0.01
+    <- LogisticRegression | (1, 2)-gramas | sin reducción | pesos balanced (elegida en 3 de 3 folds)
+  MultinomialNB        accuracy 0.824 ± 0.003 | F1 macro 0.622 ± 0.002 | neg 0.80 ± 0.02 | neu 0.37 ± 0.01 | pos 0.87 ± 0.00
+    <- MultinomialNB(alpha=0.1) | (1, 2)-gramas | sin reducción | pesos balanced (elegida en 3 de 3 folds)
+  SGDClassifier        accuracy 0.821 ± 0.001 | F1 macro 0.632 ± 0.002 | neg 0.82 ± 0.02 | neu 0.41 ± 0.01 | pos 0.86 ± 0.00
+    <- SGDClassifier | (1, 2)-gramas | sin reducción | pesos balanced (elegida en 3 de 3 folds)
+
+Gráfica guardada en graficas\configuracion_optima_corpus_pos5_neu234_f1_macro.png; CSV en logs\launcher_corpus_pos5_neu234_f1_macro_20261111_123428/ (1201 s)

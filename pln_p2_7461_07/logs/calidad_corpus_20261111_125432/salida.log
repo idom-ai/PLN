@@ -1,0 +1,150 @@
+[log] logs\calidad_corpus_20261111_125432\salida.log (python experimento_calidad_corpus.py --corpus corpus)
+
+=== 20000 reviews ===
+  Calidad del corpus (describe()):
+    métrica        total   negativas     neutras   positivas
+    files          19999        1636         683       17680
+    chars        1685277      328881      121874     1234522
+    paras          20356        1759         728       17869
+    sents          35142        4994        1795       28353
+    words         368623       71786       26584      270253
+    vocab          10506        4511        2525        8477
+    lexdiv         35.09       15.91       10.53       31.88
+    ppdoc           1.02        1.08        1.07        1.01
+    sppar           1.73        2.84        2.47        1.59
+
+  LogisticRegression: accuracy 0.922 | F1 macro 0.566 | accuracy negativas 0.551 | accuracy neutras 0.059 | accuracy positivas 0.990
+    real / predicha   negativas    neutras  positivas
+    negativas               901         27        708
+    neutras                 160         40        483
+    positivas               160         20      17500
+
+  MultinomialNB: accuracy 0.886 | F1 macro 0.330 | accuracy negativas 0.026 | accuracy neutras 0.000 | accuracy positivas 1.000
+    real / predicha   negativas    neutras  positivas
+    negativas                42          0       1594
+    neutras                   1          0        682
+    positivas                 5          0      17675
+
+  SGDClassifier: accuracy 0.923 | F1 macro 0.552 | accuracy negativas 0.587 | accuracy neutras 0.023 | accuracy positivas 0.989
+    real / predicha   negativas    neutras  positivas
+    negativas               961          8        667
+    neutras                 184         16        483
+    positivas               189          6      17485
+
+  (427 s)
+
+=== 40000 reviews ===
+  Calidad del corpus (describe()):
+    métrica        total   negativas     neutras   positivas
+    files          40000        3273        1367       35360
+    chars        3362022      667181      246195     2448646
+    paras          40698        3509        1451       35738
+    sents          70350       10137        3625       56588
+    words         735129      145590       53588      535951
+    vocab          15242        6539        3753       12195
+    lexdiv         48.23       22.26       14.28       43.95
+    ppdoc           1.02        1.07        1.06        1.01
+    sppar           1.73        2.89        2.50        1.58
+
+  LogisticRegression: accuracy 0.926 | F1 macro 0.583 | accuracy negativas 0.619 | accuracy neutras 0.064 | accuracy positivas 0.988
+    real / predicha   negativas    neutras  positivas
+    negativas              2025         67       1181
+    neutras                 370         87        910
+    positivas               350         64      34946
+
+  MultinomialNB: accuracy 0.889 | F1 macro 0.353 | accuracy negativas 0.063 | accuracy neutras 0.000 | accuracy positivas 1.000
+    real / predicha   negativas    neutras  positivas
+    negativas               207          0       3066
+    neutras                  14          0       1353
+    positivas                 6          0      35354
+
+  SGDClassifier: accuracy 0.925 | F1 macro 0.545 | accuracy negativas 0.583 | accuracy neutras 0.007 | accuracy positivas 0.992
+    real / predicha   negativas    neutras  positivas
+    negativas              1909          3       1361
+    neutras                 326          9       1032
+    positivas               282          2      35076
+
+  (449 s)
+
+=== 80000 reviews ===
+  Calidad del corpus (describe()):
+    métrica        total   negativas     neutras   positivas
+    files          80000        6546        2734       70720
+    chars        6688738     1315302      484365     4889071
+    paras          81424        6989        2902       71533
+    sents         140152       20085        7238      112829
+    words        1462560      287039      105661     1069860
+    vocab          22179        9155        5437       17827
+    lexdiv         65.94       31.35       19.43       60.01
+    ppdoc           1.02        1.07        1.06        1.01
+    sppar           1.72        2.87        2.49        1.58
+
+  LogisticRegression: accuracy 0.930 | F1 macro 0.606 | accuracy negativas 0.654 | accuracy neutras 0.092 | accuracy positivas 0.988
+    real / predicha   negativas    neutras  positivas
+    negativas              4279        152       2115
+    neutras                 756        252       1726
+    positivas               709        138      69873
+
+  MultinomialNB: accuracy 0.894 | F1 macro 0.389 | accuracy negativas 0.127 | accuracy neutras 0.000 | accuracy positivas 0.999
+    real / predicha   negativas    neutras  positivas
+    negativas               831          0       5715
+    neutras                  64          0       2670
+    positivas                39          2      70679
+
+  SGDClassifier: accuracy 0.924 | F1 macro 0.540 | accuracy negativas 0.570 | accuracy neutras 0.002 | accuracy positivas 0.993
+    real / predicha   negativas    neutras  positivas
+    negativas              3732          2       2812
+    neutras                 624          5       2105
+    positivas               509          0      70211
+
+  (898 s)
+
+=== 160000 reviews ===
+  Calidad del corpus (describe()):
+    métrica        total   negativas     neutras   positivas
+    files         148179       12124        5064      130991
+    chars       12344291     2424943      907795     9011553
+    paras         150764       12945        5378      132441
+    sents         258887       37040       13536      208311
+    words        2698316      528419      198326     1971571
+    vocab          31731       12766        7668       25266
+    lexdiv         85.04       41.39       25.86       78.03
+    ppdoc           1.02        1.07        1.06        1.01
+    sppar           1.72        2.86        2.52        1.57
+
+  LogisticRegression: accuracy 0.932 | F1 macro 0.612 | accuracy negativas 0.688 | accuracy neutras 0.094 | accuracy positivas 0.987
+    real / predicha   negativas    neutras  positivas
+    negativas              8341        324       3459
+    neutras                1524        477       3063
+    positivas              1384        319     129288
+
+  MultinomialNB: accuracy 0.898 | F1 macro 0.416 | accuracy negativas 0.181 | accuracy neutras 0.000 | accuracy positivas 0.999
+    real / predicha   negativas    neutras  positivas
+    negativas              2200          0       9924
+    neutras                 185          2       4877
+    positivas               125          5     130861
+
+  SGDClassifier: accuracy 0.925 | F1 macro 0.540 | accuracy negativas 0.573 | accuracy neutras 0.000 | accuracy positivas 0.993
+    real / predicha   negativas    neutras  positivas
+    negativas              6942          1       5181
+    neutras                1135          2       3927
+    positivas               928          0     130063
+
+  (1650 s)
+
+=== RESUMEN (datos de las gráficas) ===
+ tamaño modelo              accuracy F1 macro  acc neg  vocab neg  acc neu  vocab neu  acc pos  vocab pos
+  20000 LogisticRegression     0.922    0.566    0.551       4511    0.059       2525    0.990       8477
+  20000 MultinomialNB          0.886    0.330    0.026       4511    0.000       2525    1.000       8477
+  20000 SGDClassifier          0.923    0.552    0.587       4511    0.023       2525    0.989       8477
+  40000 LogisticRegression     0.926    0.583    0.619       6539    0.064       3753    0.988      12195
+  40000 MultinomialNB          0.889    0.353    0.063       6539    0.000       3753    1.000      12195
+  40000 SGDClassifier          0.925    0.545    0.583       6539    0.007       3753    0.992      12195
+  80000 LogisticRegression     0.930    0.606    0.654       9155    0.092       5437    0.988      17827
+  80000 MultinomialNB          0.894    0.389    0.127       9155    0.000       5437    0.999      17827
+  80000 SGDClassifier          0.924    0.540    0.570       9155    0.002       5437    0.993      17827
+ 160000 LogisticRegression     0.932    0.612    0.688      12766    0.094       7668    0.987      25266
+ 160000 MultinomialNB          0.898    0.416    0.181      12766    0.000       7668    0.999      25266
+ 160000 SGDClassifier          0.925    0.540    0.573      12766    0.000       7668    0.993      25266
+
+Gráficas guardadas en graficas/ (sufijo _corpus)
