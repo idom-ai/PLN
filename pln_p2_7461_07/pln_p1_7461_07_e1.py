@@ -194,6 +194,8 @@ def main():
         --descargas: carpeta donde se guarda el .jsonl descargado. Por defecto, la actual.
         --salida: carpeta raíz del corpus que se genera. Por defecto, corpus.
         --forzar: vuelve a descargar el fichero aunque ya exista.
+        --umbral-positiva: rating mínimo de las positivas. Por defecto 3.5 (4 y 5 estrellas).
+        --umbral-negativa: rating máximo de las negativas. Por defecto 1.5 (1 estrella).
     """
     parser = argparse.ArgumentParser(description='Descarga reviews de Amazon y construye el corpus.')
     parser.add_argument('--categoria', default='Gift_Cards',
@@ -204,11 +206,17 @@ def main():
                         help='carpeta raíz del corpus (por defecto, corpus)')
     parser.add_argument('--forzar', action='store_true',
                         help='volver a descargar aunque el fichero ya exista')
+    parser.add_argument('--umbral-positiva', type=float, default=3.5,
+                        help='rating mínimo de las positivas (por defecto 3.5: 4 y 5 estrellas)')
+    parser.add_argument('--umbral-negativa', type=float, default=1.5,
+                        help='rating máximo de las negativas (por defecto 1.5: solo 1 estrella)')
     args = parser.parse_args()
 
     fichero = descargar_reviews(args.categoria, args.descargas, forzar=args.forzar)
 
-    procesador = ProcesadorDeTexto(fichero, carpeta_salida=args.salida)
+    procesador = ProcesadorDeTexto(fichero, carpeta_salida=args.salida,
+                                   umbral_positiva=args.umbral_positiva,
+                                   umbral_negativa=args.umbral_negativa)
     contadores = procesador.preprocesar_texto()
 
     print(f'Corpus creado en {args.salida}/:')

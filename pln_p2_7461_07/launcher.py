@@ -12,16 +12,28 @@ Pasos (los del enunciado):
      al entrenar): sin pesos, 'balanced' y unos pesos agresivos; y alpha en NB.
   4. Ejecuta todas las pruebas, con un proceso por fold (los folds van en paralelo y, dentro
      de cada uno, GridSearchCV reparte las configuraciones entre los núcleos que quedan).
-     La mejor configuración se elige por F1 macro con validación cruzada interna sobre el
-     train del fold; el test del fold solo se usa para medirla.
+     La mejor configuración se elige (por defecto por F1 macro; con --metrica accuracy, por
+     accuracy) con validación cruzada interna sobre el train del fold; el test del fold solo
+     se usa para medirla.
   5. Muestra por pantalla la mejor configuración de cada modelo en cada fold, con su accuracy
      en test (global y por clase) y F1 macro, y la configuración sugerida de cada modelo.
 
-Guarda la gráfica graficas/configuracion_optima.png (accuracy por clase de cada modelo).
+Todo se guarda en logs/launcher_<corpus>_<fecha>/:
+  salida.log                  lo mismo que sale por pantalla
+  grid_fold<i>.csv            TODAS las configuraciones probadas en el fold i, con su accuracy,
+                              F1 macro y recall de cada clase (media y desviación de la CV interna)
+  todas_configuraciones.csv   cada configuración con la media de esas métricas en los folds,
+                              ordenada por la métrica de selección (para elegir el mejor modelo)
+  mejores_test.csv            mejor configuración de cada modelo en cada fold, medida en test
+y la gráfica en graficas/configuracion_optima_<corpus>.png (accuracy por clase de cada modelo).
 
-Uso (desde la carpeta de la práctica, con el corpus en corpus/):
-  python3 launcher.py
+Uso (desde la carpeta de la práctica):
+  python3 launcher.py                                    # corpus/, selección por F1 macro
+  python3 launcher.py --corpus corpus_pos5_neu234        # otro reparto de clases
+  python3 launcher.py --metrica accuracy --n-reviews 0   # selección por accuracy, todo el corpus
 """
+import argparse
+import csv
 import os
 import time
 from collections import Counter
@@ -34,12 +46,13 @@ import numpy as np
 from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_selection import SelectKBest, chi2
 from sklearn.linear_model import LogisticRegression, SGDClassifier
-from sklearn.metrics import accuracy_score, f1_score, recall_score
+from sklearn.metrics import accuracy_score, f1_score, make_scorer, recall_score
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from sklearn.naive_bayes import MultinomialNB
 
 from corpus_loader import CorpusLoader
 from json_corpus_reader import JsonCorpusReader
+from registro import Registro
 from sentiment_classifier import SentimentClassifier
 
 CORPUS = 'corpus'
@@ -48,6 +61,12 @@ N_REVIEWS = 50000        # None = todo el corpus (con un número, muestra con la
 FOLDS = 3
 CLASES = ['negativas', 'neutras', 'positivas']
 MODELOS = ['LogisticRegression', 'MultinomialNB', 'SGDClassifier']
+
+# Métricas que GridSearchCV calcula para TODAS las configuraciones (se guardan en los CSV).
+# Calcularlas cuesta casi nada: los modelos se entrenan una vez y se miden con todas.
+METRICAS = {'accuracy': 'accuracy', 'f1_macro': 'f1_macro'}
+METRICAS.update({f'recall_{c}': make_scorer(recall_score, labels=[c], average='macro',
+                                            zero_division=0) for c in CLASES})
 
 NGRAMAS = [(1, 1), (1, 2)]
 REDUCTORES = [None,                                              # sin reducción
@@ -130,7 +149,7 @@ def evaluar(modelo, X_test, y_test):
     return resultado
 
 
-def procesar_fold(i, train_idx, test_idx, n_jobs):
+def procesar_fold(i, train_idx, test_idx, n_jobs, corpus, n_reviews, metrica):
     """
     Trabajo de un fold, que se ejecuta en su propio proceso: carga las reviews del fold,
     hace el GridSearchCV y, para cada modelo, reentrena su mejor configuración con todo el
@@ -141,47 +160,103 @@ def procesar_fold(i, train_idx, test_idx, n_jobs):
         train_idx (numpy.ndarray): posiciones de las reviews de entrenamiento en el CorpusLoader.
         test_idx (numpy.ndarray): posiciones de las reviews de test.
         n_jobs (int): núcleos que puede usar el GridSearchCV de este fold.
+        corpus (str): carpeta del corpus.
+        n_reviews (int | None): tamaño de la muestra (None: todo el corpus).
+        metrica (str): métrica con la que se elige la mejor configuración ('f1_macro' o 'accuracy').
 
     Devuelve:
         dict: 'fold', 'segundos', 'n_configuraciones', 'top5' (las 5 mejores configuraciones
-            con su F1 interno) y 'mejores' ({modelo: {'configuracion', 'f1_interno', 'test'}}).
+            con su métrica interna), 'mejores' ({modelo: {'configuracion', 'f1_interno', 'test'}})
+            y 'filas' (una fila por configuración con todas las métricas, para los CSV).
     """
     inicio = time.time()
     # Cada proceso crea su propio reader y loader; con la misma semilla, el loader tiene las
     # mismas reviews en el mismo orden que en el proceso principal.
-    loader = CorpusLoader(JsonCorpusReader(CORPUS), folds=FOLDS, n_total=N_REVIEWS)
+    loader = CorpusLoader(JsonCorpusReader(corpus), folds=FOLDS, n_total=n_reviews)
     X_train, X_test = loader.documents(train_idx), loader.documents(test_idx)
     y_train, y_test = loader.labels(train_idx), loader.labels(test_idx)
 
-    busqueda = GridSearchCV(SentimentClassifier(), PARAM_GRID, scoring='f1_macro', refit=False,
+    busqueda = GridSearchCV(SentimentClassifier(), PARAM_GRID, scoring=METRICAS, refit=False,
                             cv=StratifiedKFold(n_splits=3, shuffle=True, random_state=42),
                             n_jobs=n_jobs)
     busqueda.fit(X_train, y_train)
     cv = busqueda.cv_results_
+    puntuacion = cv[f'mean_test_{metrica}']
 
     mejores = {}
     for modelo in MODELOS:
         candidatos = [k for k, p in enumerate(cv['params']) if type(p['estimator']).__name__ == modelo]
-        k = max(candidatos, key=lambda c: cv['mean_test_score'][c])
+        k = max(candidatos, key=lambda c: puntuacion[c])
         final = SentimentClassifier(**cv['params'][k]).fit(X_train, y_train)
         mejores[modelo] = {'configuracion': describir(cv['params'][k]),
-                           'f1_interno': cv['mean_test_score'][k],
+                           'f1_interno': puntuacion[k],
                            'test': evaluar(final, X_test, y_test)}
-    top5 = [(cv['mean_test_score'][k], describir(cv['params'][k]))
-            for k in np.argsort(-cv['mean_test_score'])[:5]]
+    top5 = [(puntuacion[k], describir(cv['params'][k])) for k in np.argsort(-puntuacion)[:5]]
+
+    filas = []
+    for k, params in enumerate(cv['params']):
+        fila = {'fold': i, 'modelo': type(params['estimator']).__name__,
+                'configuracion': describir(params)}
+        for nombre in METRICAS:
+            fila[f'{nombre}_media'] = round(float(cv[f'mean_test_{nombre}'][k]), 4)
+            fila[f'{nombre}_std'] = round(float(cv[f'std_test_{nombre}'][k]), 4)
+        fila['segundos_entrenar'] = round(float(cv['mean_fit_time'][k]), 1)
+        filas.append(fila)
     return {'fold': i, 'segundos': time.time() - inicio, 'n_configuraciones': len(cv['params']),
-            'top5': top5, 'mejores': mejores}
+            'top5': top5, 'mejores': mejores, 'filas': filas}
 
 
-def imprimir_fold(r):
+def guardar_csv(filas, ruta):
+    """
+    Guarda una lista de diccionarios (todos con las mismas claves) en un fichero CSV.
+
+    Parámetros:
+        filas (list de dict): una fila por diccionario; las claves son las columnas.
+        ruta (str): fichero .csv donde se guarda.
+    """
+    with open(ruta, 'w', newline='', encoding='utf-8') as f:
+        escritor = csv.DictWriter(f, fieldnames=list(filas[0]))
+        escritor.writeheader()
+        escritor.writerows(filas)
+
+
+def agregar_configuraciones(resultados, metrica):
+    """
+    Junta las configuraciones de todos los folds: para cada una, la media en los folds de
+    cada métrica de la validación cruzada interna.
+
+    Parámetros:
+        resultados (list de dict): resultados de procesar_fold().
+        metrica (str): métrica por la que se ordenan (de mayor a menor).
+
+    Devuelve:
+        list de dict: una fila por configuración, con 'modelo', 'configuracion' y la media de
+            cada métrica ('<métrica>'), ordenadas por la métrica indicada.
+    """
+    por_configuracion = {}
+    for r in resultados:
+        for fila in r['filas']:
+            por_configuracion.setdefault((fila['modelo'], fila['configuracion']), []).append(fila)
+    tabla = []
+    for (modelo, configuracion), filas in por_configuracion.items():
+        fila = {'modelo': modelo, 'configuracion': configuracion, 'folds': len(filas)}
+        for nombre in METRICAS:
+            fila[nombre] = round(float(np.mean([f[f'{nombre}_media'] for f in filas])), 4)
+        fila['segundos_entrenar'] = round(float(np.mean([f['segundos_entrenar'] for f in filas])), 1)
+        tabla.append(fila)
+    return sorted(tabla, key=lambda f: -f[metrica])
+
+
+def imprimir_fold(r, metrica):
     """
     Muestra por pantalla el resultado de un fold.
 
     Parámetros:
         r (dict): resultado de procesar_fold().
+        metrica (str): métrica con la que se ha elegido la mejor configuración.
     """
     print(f'\n=== Fold {r["fold"]} ({r["n_configuraciones"]} configuraciones, {r["segundos"]:.0f} s) ===')
-    print('  Las 5 mejores configuraciones (F1 macro interno):')
+    print(f'  Las 5 mejores configuraciones ({metrica} interno):')
     for f1, configuracion in r['top5']:
         print(f'    {f1:.3f}  {configuracion}')
     print('  Mejor configuración de cada modelo, medida en el test del fold:')
@@ -275,37 +350,76 @@ def grafica(resumen, n_reviews, ruta):
 def main():
     """
     Ejecuta el experimento 2 completo: lanza un proceso por fold, muestra los resultados por
-    pantalla y guarda la gráfica en graficas/.
+    pantalla, guarda el log y los CSV en logs/ y la gráfica en graficas/.
 
-    Parámetros:
-        (ninguno: usa las constantes CORPUS, GRAFICAS, N_REVIEWS, FOLDS y PARAM_GRID)
+    Parámetros (de línea de comandos):
+        --corpus: carpeta del corpus. Por defecto, corpus.
+        --n-reviews: tamaño de la muestra (con la proporción original de clases); 0 = todo
+            el corpus. Por defecto, N_REVIEWS.
+        --metrica: métrica con la que se elige la mejor configuración: f1_macro (por defecto)
+            o accuracy.
     """
-    inicio = time.time()
-    reader = JsonCorpusReader(CORPUS)                               # paso 1
-    loader = CorpusLoader(reader, folds=FOLDS, n_total=N_REVIEWS)   # paso 2
-    particiones = list(loader.splitter.split(loader.fileids(), loader.labels()))
-    n_jobs = max(1, (os.cpu_count() or 1) // FOLDS)                 # núcleos para cada fold
-    print(f'{len(loader.fileids())} reviews, {FOLDS} folds en paralelo, {n_jobs} núcleos por fold')
+    parser = argparse.ArgumentParser(description='Grid search de los 3 modelos con validación cruzada.')
+    parser.add_argument('--corpus', default=CORPUS, help=f'carpeta del corpus (por defecto, {CORPUS})')
+    parser.add_argument('--n-reviews', type=int, default=N_REVIEWS,
+                        help=f'reviews de la muestra; 0 = todas (por defecto, {N_REVIEWS})')
+    parser.add_argument('--metrica', choices=['f1_macro', 'accuracy'], default='f1_macro',
+                        help='métrica para elegir la mejor configuración (por defecto, f1_macro)')
+    args = parser.parse_args()
+    n_reviews = args.n_reviews or None
+    nombre = os.path.basename(os.path.normpath(args.corpus))
 
-    resultados = []
-    with ProcessPoolExecutor(max_workers=FOLDS) as procesos:        # pasos 3 y 4
-        tareas = [procesos.submit(procesar_fold, i, tr, te, n_jobs)
-                  for i, (tr, te) in enumerate(particiones, 1)]
-        for tarea in as_completed(tareas):
-            resultados.append(tarea.result())
-            imprimir_fold(resultados[-1])
+    with Registro(f'launcher_{nombre}_{args.metrica}') as registro:
+        inicio = time.time()
+        reader = JsonCorpusReader(args.corpus)                          # paso 1
+        loader = CorpusLoader(reader, folds=FOLDS, n_total=n_reviews)   # paso 2
+        particiones = list(loader.splitter.split(loader.fileids(), loader.labels()))
+        n_jobs = max(1, (os.cpu_count() or 1) // FOLDS)                 # núcleos para cada fold
+        print(f'Corpus {args.corpus}: {len(loader.fileids())} reviews '
+              f'({", ".join(f"{c} {loader.labels().count(c)}" for c in CLASES)}), '
+              f'selección por {args.metrica}, {FOLDS} folds en paralelo, {n_jobs} núcleos por fold',
+              flush=True)
 
-    resumen = resumir([r['mejores'] for r in sorted(resultados, key=lambda r: r['fold'])])
-    print(f'\n=== CONFIGURACIÓN SUGERIDA DE CADA MODELO (test, media ± desviación de {FOLDS} folds) ===')
-    for modelo, r in resumen.items():                               # paso 5
-        print(f'  {modelo:<20} accuracy {r["accuracy"]:.3f} ± {r["accuracy_std"]:.3f} | '
-              f'F1 macro {r["f1_macro"]:.3f} ± {r["f1_macro_std"]:.3f} | '
-              + ' | '.join(f'{c[:3]} {r[c]:.2f} ± {r[c + "_std"]:.2f}' for c in CLASES)
-              + f'\n    <- {r["configuracion"]} (elegida en {r["veces"]} de {FOLDS} folds)')
+        resultados = []
+        with ProcessPoolExecutor(max_workers=FOLDS) as procesos:        # pasos 3 y 4
+            tareas = [procesos.submit(procesar_fold, i, tr, te, n_jobs, args.corpus, n_reviews,
+                                      args.metrica)
+                      for i, (tr, te) in enumerate(particiones, 1)]
+            for tarea in as_completed(tareas):
+                resultados.append(tarea.result())
+                imprimir_fold(resultados[-1], args.metrica)
+                guardar_csv(resultados[-1]['filas'],
+                            os.path.join(registro.carpeta, f'grid_fold{resultados[-1]["fold"]}.csv'))
 
-    os.makedirs(GRAFICAS, exist_ok=True)
-    grafica(resumen, len(loader.fileids()), os.path.join(GRAFICAS, 'configuracion_optima.png'))
-    print(f'\nGráfica guardada en {GRAFICAS}/configuracion_optima.png ({time.time() - inicio:.0f} s)')
+        resultados.sort(key=lambda r: r['fold'])
+        tabla = agregar_configuraciones(resultados, args.metrica)
+        guardar_csv(tabla, os.path.join(registro.carpeta, 'todas_configuraciones.csv'))
+        print(f'\n=== LAS 10 MEJORES CONFIGURACIONES ({args.metrica} interno, media de {FOLDS} folds;'
+              f' el resto en todas_configuraciones.csv) ===')
+        for fila in tabla[:10]:
+            print(f'  acc {fila["accuracy"]:.3f} | F1 {fila["f1_macro"]:.3f} | '
+                  + ' | '.join(f'{c[:3]} {fila["recall_" + c]:.2f}' for c in CLASES)
+                  + f'  {fila["configuracion"]}')
+
+        mejores_test = [{'fold': r['fold'], 'modelo': modelo, 'configuracion': m['configuracion'],
+                         f'{args.metrica}_interno': round(float(m['f1_interno']), 4),
+                         **{k: round(float(v), 4) for k, v in m['test'].items()}}
+                        for r in resultados for modelo, m in r['mejores'].items()]
+        guardar_csv(mejores_test, os.path.join(registro.carpeta, 'mejores_test.csv'))
+
+        resumen = resumir([r['mejores'] for r in resultados])
+        print(f'\n=== CONFIGURACIÓN SUGERIDA DE CADA MODELO (test, media ± desviación de {FOLDS} folds) ===')
+        for modelo, r in resumen.items():                               # paso 5
+            print(f'  {modelo:<20} accuracy {r["accuracy"]:.3f} ± {r["accuracy_std"]:.3f} | '
+                  f'F1 macro {r["f1_macro"]:.3f} ± {r["f1_macro_std"]:.3f} | '
+                  + ' | '.join(f'{c[:3]} {r[c]:.2f} ± {r[c + "_std"]:.2f}' for c in CLASES)
+                  + f'\n    <- {r["configuracion"]} (elegida en {r["veces"]} de {FOLDS} folds)')
+
+        os.makedirs(GRAFICAS, exist_ok=True)
+        ruta_grafica = os.path.join(GRAFICAS, f'configuracion_optima_{nombre}_{args.metrica}.png')
+        grafica(resumen, len(loader.fileids()), ruta_grafica)
+        print(f'\nGráfica guardada en {ruta_grafica}; CSV en {registro.carpeta}/ '
+              f'({time.time() - inicio:.0f} s)')
 
 
 if __name__ == '__main__':

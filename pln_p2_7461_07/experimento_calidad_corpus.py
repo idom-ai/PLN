@@ -9,16 +9,22 @@ original de clases (~84 % positivas, ~8 % negativas, ~8 % neutras):
   3. Muestra por pantalla la matriz de confusión (suma de los folds) y las métricas de cada modelo.
 
 Al final guarda en graficas/:
-  evolucion_negativas.png, evolucion_neutras.png, evolucion_positivas.png
+  evolucion_<clase>_<corpus>.png (negativas, neutras y positivas)
       accuracy de la clase (recall) de cada modelo frente al vocabulario de esa clase
-  matrices_confusion.png
+  matrices_confusion_<corpus>.png
       matrices de confusión (filas: tamaños; columnas: modelos)
 
-Uso (desde la carpeta de la práctica, con el corpus en corpus/):
-  python3 experimento_calidad_corpus.py
+Los folds de cada tamaño se ejecutan en paralelo (un proceso por fold). Lo que sale por
+pantalla se guarda también en logs/calidad_<corpus>_<fecha>/salida.log.
+
+Uso (desde la carpeta de la práctica):
+  python3 experimento_calidad_corpus.py                              # corpus/
+  python3 experimento_calidad_corpus.py --corpus corpus_pos5_neu234  # otro reparto de clases
 """
+import argparse
 import os
 import time
+from concurrent.futures import ProcessPoolExecutor
 
 import matplotlib
 matplotlib.use('Agg')  # dibuja en fichero, sin abrir ventanas
@@ -30,6 +36,7 @@ from sklearn.naive_bayes import MultinomialNB
 
 from corpus_loader import CorpusLoader
 from json_corpus_reader import JsonCorpusReader
+from registro import Registro
 from sentiment_classifier import SentimentClassifier
 
 CORPUS = 'corpus'
@@ -77,22 +84,52 @@ def calidad_corpus(reader, loader):
     return calidad
 
 
-def evaluar_modelos(loader):
+def evaluar_fold(corpus, tamano, train_idx, test_idx):
     """
-    Entrena y evalúa los 3 modelos con validación cruzada y suma sus matrices de confusión.
+    Trabajo de un fold, que se ejecuta en su propio proceso: entrena los 3 modelos con el
+    train del fold y calcula su matriz de confusión en el test del fold.
 
     Parámetros:
-        loader (CorpusLoader): cargador con la muestra; cada iteración es un fold.
+        corpus (str): carpeta del corpus.
+        tamano (int): tamaño de la muestra (el mismo que en el proceso principal, para que el
+            loader tenga las mismas reviews en el mismo orden).
+        train_idx (numpy.ndarray): posiciones de las reviews de entrenamiento en el CorpusLoader.
+        test_idx (numpy.ndarray): posiciones de las reviews de test.
+
+    Devuelve:
+        dict: {nombre del modelo: matriz de confusión 3x3 (numpy.ndarray)} de este fold.
+    """
+    loader = CorpusLoader(JsonCorpusReader(corpus), folds=FOLDS, n_total=tamano)
+    X_train, X_test = loader.documents(train_idx), loader.documents(test_idx)
+    y_train, y_test = loader.labels(train_idx), loader.labels(test_idx)
+    matrices = {}
+    for nombre, estimador in MODELOS.items():
+        modelo = SentimentClassifier(estimator=estimador).fit(X_train, y_train)
+        matrices[nombre] = confusion_matrix(y_test, modelo.predict(X_test), labels=CLASES)
+    return matrices
+
+
+def evaluar_modelos(loader, corpus, tamano):
+    """
+    Entrena y evalúa los 3 modelos con validación cruzada (un proceso por fold) y suma sus
+    matrices de confusión.
+
+    Parámetros:
+        loader (CorpusLoader): cargador con la muestra; su splitter da los folds.
+        corpus (str): carpeta del corpus (cada proceso crea su propio reader).
+        tamano (int): tamaño de la muestra con la que se creó el loader.
 
     Devuelve:
         dict: {nombre del modelo: matriz de confusión 3x3 (numpy.ndarray)}, con
             filas = clase real y columnas = clase predicha, en el orden de CLASES.
     """
     matrices = {nombre: np.zeros((len(CLASES), len(CLASES)), dtype=int) for nombre in MODELOS}
-    for X_train, X_test, y_train, y_test in loader:
-        for nombre, estimador in MODELOS.items():
-            modelo = SentimentClassifier(estimator=estimador).fit(X_train, y_train)
-            matrices[nombre] += confusion_matrix(y_test, modelo.predict(X_test), labels=CLASES)
+    particiones = list(loader.splitter.split(loader.fileids(), loader.labels()))
+    with ProcessPoolExecutor(max_workers=FOLDS) as procesos:
+        tareas = [procesos.submit(evaluar_fold, corpus, tamano, tr, te) for tr, te in particiones]
+        for tarea in tareas:
+            for nombre, m in tarea.result().items():
+                matrices[nombre] += m
     return matrices
 
 
@@ -272,33 +309,40 @@ def grafica_matrices(resultados, ruta):
 
 def main():
     """
-    Ejecuta el experimento 1 completo: muestra los resultados por pantalla y guarda las
-    gráficas en graficas/.
+    Ejecuta el experimento 1 completo: muestra los resultados por pantalla (y en el log) y
+    guarda las gráficas en graficas/.
 
-    Parámetros:
-        (ninguno: usa las constantes CORPUS, GRAFICAS, TAMANOS y FOLDS)
+    Parámetros (de línea de comandos):
+        --corpus: carpeta del corpus. Por defecto, corpus.
     """
-    reader = JsonCorpusReader(CORPUS)
-    resultados = {}
-    for tamano in TAMANOS:
-        inicio = time.time()
-        print(f'\n=== {tamano} reviews ===')
-        loader = CorpusLoader(reader, folds=FOLDS, n_total=tamano)
-        calidad = calidad_corpus(reader, loader)
-        imprimir_calidad(calidad)
-        matrices = evaluar_modelos(loader)
-        metricas = {nombre: metricas_matriz(m) for nombre, m in matrices.items()}
-        imprimir_modelos(matrices, metricas)
-        resultados[tamano] = {'calidad': calidad, 'matrices': matrices, 'metricas': metricas}
-        print(f'\n  ({time.time() - inicio:.0f} s)', flush=True)
+    parser = argparse.ArgumentParser(description='Modelos por defecto con muestras de distinto tamaño.')
+    parser.add_argument('--corpus', default=CORPUS, help=f'carpeta del corpus (por defecto, {CORPUS})')
+    args = parser.parse_args()
+    nombre_corpus = os.path.basename(os.path.normpath(args.corpus))
 
-    imprimir_resumen(resultados)
+    with Registro(f'calidad_{nombre_corpus}'):
+        reader = JsonCorpusReader(args.corpus)
+        resultados = {}
+        for tamano in TAMANOS:
+            inicio = time.time()
+            print(f'\n=== {tamano} reviews ===')
+            loader = CorpusLoader(reader, folds=FOLDS, n_total=tamano)
+            calidad = calidad_corpus(reader, loader)
+            imprimir_calidad(calidad)
+            matrices = evaluar_modelos(loader, args.corpus, tamano)
+            metricas = {nombre: metricas_matriz(m) for nombre, m in matrices.items()}
+            imprimir_modelos(matrices, metricas)
+            resultados[tamano] = {'calidad': calidad, 'matrices': matrices, 'metricas': metricas}
+            print(f'\n  ({time.time() - inicio:.0f} s)', flush=True)
 
-    os.makedirs(GRAFICAS, exist_ok=True)
-    for clase in CLASES:
-        grafica_clase(resultados, clase, os.path.join(GRAFICAS, f'evolucion_{clase}.png'))
-    grafica_matrices(resultados, os.path.join(GRAFICAS, 'matrices_confusion.png'))
-    print(f'\nGráficas guardadas en {GRAFICAS}/')
+        imprimir_resumen(resultados)
+
+        os.makedirs(GRAFICAS, exist_ok=True)
+        for clase in CLASES:
+            grafica_clase(resultados, clase,
+                          os.path.join(GRAFICAS, f'evolucion_{clase}_{nombre_corpus}.png'))
+        grafica_matrices(resultados, os.path.join(GRAFICAS, f'matrices_confusion_{nombre_corpus}.png'))
+        print(f'\nGráficas guardadas en {GRAFICAS}/ (sufijo _{nombre_corpus})')
 
 
 if __name__ == '__main__':

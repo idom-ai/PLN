@@ -6,3 +6,5 @@ memoria.out
 memoria.synctex.gz
 memoria.toc
 __pycache__/
+corpus/
+corpus_*/
